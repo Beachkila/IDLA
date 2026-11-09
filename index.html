@@ -1315,7 +1315,7 @@ function drawModes(t) {
   textC(B, 'CHOOSE A MODE', 128, 5, HI);
   const rows = [['newhire', 'NEW HIRE', 'WRONG SPOTS ARE BLOCKED'], ['easy', 'EASY', 'NO BLOCKING. AUDIT AT END'],
     ['medium', 'MEDIUM', 'EASY + CARTS IN THE AISLES'], ['hard', 'HARD', 'MEDIUM + CUSTOMERS NEED HELP'],
-    ['daily', 'DAILY SHIFT', 'SAME PALLETS FOR EVERYONE TODAY'], ['zamboni', 'ZAMBONI', 'SOLO NIGHT SCRUB. 2 MINUTES']];
+    ['daily', 'DAILY SHIFT', 'SAME PALLETS FOR EVERYONE TODAY'], ['zamboni', 'ZAMBONI', "2 MINUTES 'TIL OPEN"]];
   BTN = [];
   rows.forEach(([k, n, d], i) => {
     const y = 13 + i * 25, r = [12, y, 244, y + 23];
@@ -1741,9 +1741,85 @@ function drawMenu() {
   textC(B, 'QUITTING ENDS THE SHIFT WITHOUT A SCORE', 128, 166, LINE);
 }
 
+// ---------- joystick + A/B on menu screens ----------
+const MENU_STATES = ['title', 'modes', 'chars', 'results', 'initials', 'board', 'menu'];
+const NAV = { i: -1, on: false, st: '', hold: 0, dir: null, ini: 0 };
+function navList() {
+  if (state === 'drive' && G && G.help && G.help.btns && !G.help.result) return G.help.btns.map(b => ({ r: b.r, f: () => answerHelp(b.a) }));
+  if (MENU_STATES.includes(state)) return BTN;
+  return null;
+}
+function navBack() {
+  if (state === 'title') return;
+  if (state === 'modes' || state === 'chars' || state === 'results') state = 'title';
+  else if (state === 'initials') state = 'results';
+  else if (state === 'board') state = BV.back;
+  else if (state === 'menu') { if (G.menuView !== 'main') G.menuView = 'main'; else resumeMenu(); }
+}
+function navStep(list, dx, dy) {
+  if (!list.length) return;
+  if (NAV.i < 0 || NAV.i >= list.length) { NAV.i = 0; return; }
+  const c = list[NAV.i].r, cx = (c[0] + c[2]) / 2, cy = (c[1] + c[3]) / 2;
+  let best = -1, bs = 1e9;
+  list.forEach((b, k) => {
+    if (k === NAV.i) return;
+    const r = b.r, ox = (r[0] + r[2]) / 2 - cx, oy = (r[1] + r[3]) / 2 - cy;
+    const along = ox * dx + oy * dy, side = Math.abs(ox * dy - oy * dx);
+    if (along <= 2) return;
+    const sc = along + side * 2.5;
+    if (sc < bs) { bs = sc; best = k; }
+  });
+  if (best >= 0) NAV.i = best;
+}
+function navIniStep(dx, dy) {
+  if (dx) { NAV.ini = Math.max(0, Math.min(3, NAV.ini + dx)); return; }
+  if (NAV.ini < 3 && dy) BTN[NAV.ini * 3 + (dy < 0 ? 0 : 2)].f();
+}
+function navUpdate(dt) {
+  const key = state + (state === 'menu' && G ? G.menuView : '') + (state === 'board' ? '' : '');
+  if (key !== NAV.st) { NAV.st = key; NAV.i = -1; NAV.ini = 0; NAV.on = NAV.on && MENU_STATES.includes(state); }
+  const list = navList();
+  if (!list) { NAV.dir = null; return; }
+  const jx = input.jx + input.kx, jy = input.jy + input.ky;
+  let dir = null;
+  if (Math.hypot(jx, jy) > 0.6) dir = Math.abs(jx) > Math.abs(jy) ? [Math.sign(jx), 0] : [0, Math.sign(jy)];
+  const same = dir && NAV.dir && dir[0] === NAV.dir[0] && dir[1] === NAV.dir[1];
+  if (dir && (!same || (NAV.hold -= dt) <= 0)) {
+    NAV.hold = same ? 0.12 : 0.38;
+    const was = NAV.on; NAV.on = true;
+    if (state === 'initials') navIniStep(dir[0], dir[1]);
+    else if (!was && NAV.i >= 0 && NAV.i < list.length) {} else navStep(list, dir[0], dir[1]);
+    beep(880, 0.025);
+  }
+  NAV.dir = dir;
+  if (input.aEdge) {
+    input.aEdge = false;
+    if (state === 'initials') {
+      NAV.on = true;
+      if (NAV.ini < 3) { NAV.ini++; beep(700, 0.04); } else { beep(660, 0.06); BTN[BTN.length - 1].f(); }
+    } else if (!NAV.on || NAV.i < 0 || NAV.i >= list.length) { NAV.on = true; if (NAV.i < 0 || NAV.i >= list.length) NAV.i = 0; beep(880, 0.025); }
+    else { if (state !== 'drive') beep(660, 0.06); list[NAV.i].f(); }
+  }
+  if (input.bEdge && state !== 'drive') {
+    input.bEdge = false;
+    horn(); navBack();
+  }
+}
+function navDraw() {
+  if (!NAV.on) return;
+  const list = navList(); if (!list) return;
+  let r = null;
+  if (state === 'initials') r = NAV.ini < 3 ? BTN[NAV.ini * 3 + 1] && BTN[NAV.ini * 3 + 1].r : BTN[BTN.length - 1] && BTN[BTN.length - 1].r;
+  else if (NAV.i >= 0 && NAV.i < list.length) r = list[NAV.i].r;
+  if (!r) return;
+  const p = Math.sin(tt * 8) > 0 ? HI : PAPER;
+  B.strokeStyle = p; B.lineWidth = 2; B.strokeRect(r[0] - 1, r[1] - 1, r[2] - r[0] + 2, r[3] - r[1] + 2); B.lineWidth = 1;
+}
+
 function frame(now) {
   const dt = Math.min(0.05, (now - last) / 1000 || 0); last = now; tt += dt;
   netFrame(dt);
+  navUpdate(dt);
   if (state === 'drive' && mode.zamboni) {
     updateZamboni(dt);
     if (state === 'drive') { drawZamTop(); drawDriveBottom(); }
@@ -1765,6 +1841,7 @@ function frame(now) {
   else if (state === 'chars') drawChars(tt);
   else if (state === 'results') drawResults();
   else if (state === 'menu') drawMenu();
+  navDraw();
   input.aEdge = input.bEdge = false;
   requestAnimationFrame(frame);
 }
@@ -1779,9 +1856,9 @@ botC.addEventListener('pointerdown', e => {
   if ((state === 'drive' || state === 'battle') && inside(x, y, MENU_BTN)) { openMenu(); return; }
   if (state === 'battle') return battlePointer('down', x, y);
   if (state === 'drive' && G.help && G.help.btns && !G.help.result) {
-    const b = G.help.btns.find(b => inside(x, y, b.r)); if (b) answerHelp(b.a); return;
+    const k = G.help.btns.findIndex(b => inside(x, y, b.r)); if (k >= 0) { NAV.i = k; answerHelp(G.help.btns[k].a); } return;
   }
-  const b = BTN.find(b => inside(x, y, b.r)); if (b && ['title', 'modes', 'chars', 'results', 'initials', 'board', 'menu'].includes(state)) { if (state !== 'initials') beep(660, 0.06); b.f(); }
+  const bi = BTN.findIndex(b => inside(x, y, b.r)), b = BTN[bi]; if (b && state === 'initials') NAV.ini = bi < 9 ? Math.floor(bi / 3) : bi === BTN.length - 1 ? 3 : NAV.ini; else if (b) NAV.i = bi; if (b && ['title', 'modes', 'chars', 'results', 'initials', 'board', 'menu'].includes(state)) { if (state !== 'initials') beep(660, 0.06); b.f(); }
 });
 botC.addEventListener('pointermove', e => { if (state === 'battle') { const [x, y] = botXY(e); battlePointer('move', x, y); } });
 botC.addEventListener('pointerup', e => { if (state === 'battle') { const [x, y] = botXY(e); battlePointer('up', x, y); } });
