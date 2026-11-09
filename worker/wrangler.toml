@@ -1,0 +1,13 @@
+name = "idla-scores"
+main = "src/index.js"
+compatibility_date = "2026-11-01"
+
+[vars]
+# Pages allowed to post scores (comma separated). Add your custom domain here if you use one.
+ALLOWED_ORIGINS = "https://beachkila.github.io,http://localhost:8000,http://127.0.0.1:8000"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "idla-scores"
+# Paste the id printed by `npx wrangler d1 create idla-scores`
+database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="IDLA">
+<meta name="theme-color" content="#24262c">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<title>IDLA - Shelf Stocker</title>
+<style>
+html,body{margin:0;height:100%;background:#24262c;overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
+#wrap{display:flex;flex-direction:column;align-items:center;height:100%;padding:calc(env(safe-area-inset-top) + 6px) 0 env(safe-area-inset-bottom);box-sizing:border-box}
+.shell{background:#464a54;border-radius:10px;padding:5px;box-shadow:0 2px 0 #18161e}
+.shell+.shell{margin-top:6px}
+canvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges;background:#000;touch-action:none}
+#controls{display:flex;justify-content:space-between;align-items:center;width:100%;max-width:460px;padding:6px 18px;box-sizing:border-box;flex:1}
+.stick{position:relative;width:140px;height:140px;border-radius:50%;background:radial-gradient(circle,#3a3e48 0 55%,#2e3240 56%);border:2px solid #18161e;touch-action:none;box-shadow:inset 0 0 0 6px #464a54}
+#knob{position:absolute;left:43px;top:43px;width:50px;height:50px;border-radius:50%;background:#7a7f88;border:2px solid #18161e;box-shadow:inset 0 -5px 0 #5a5e6c;pointer-events:none}
+button{font:bold 13px monospace;border:2px solid #18161e;background:#5a5e6c;color:#f6f4ec;touch-action:none;padding:0}
+button.on{filter:brightness(1.35)}
+.ab{display:flex;gap:14px;align-items:flex-end}
+.ab button{width:70px;height:70px;border-radius:50%;font-size:15px}
+#bA{background:#c8302c;margin-bottom:26px}#bB{background:#b08a24}
+#rotate{display:none;position:fixed;inset:0;background:#24262c;color:#f0c440;font:bold 16px monospace;align-items:center;justify-content:center;text-align:center;flex-direction:column;gap:12px}
+#rotate span{font-size:44px}
+@media (orientation:landscape) and (max-height:500px){#rotate{display:flex}#wrap{display:none}}
+</style></head><body>
+<div id="rotate"><span>&#8635;</span>TURN YOUR PHONE UPRIGHT<br>IDLA PLAYS IN PORTRAIT</div>
+<div id="wrap">
+  <div class="shell"><canvas id="top" width="256" height="192"></canvas></div>
+  <div class="shell"><canvas id="bot" width="256" height="192"></canvas></div>
+  <div id="controls">
+    <div class="stick" id="stick"><div id="knob"></div></div>
+    <div class="ab"><button id="bB">B<br>HORN</button><button id="bA">A<br>ACT</button></div>
+  </div>
+</div>
+<script src="config.js"></script>
+<script>
+if ('serviceWorker' in navigator && location.protocol === 'https:') {
+  addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+}
+</script>
+<script>
+/*__GAME__*/
+</script></body></html>
