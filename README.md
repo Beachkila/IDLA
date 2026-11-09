@@ -1,8 +1,8 @@
 # IDLA – Shelf Stocker
 
-IDLA is a two-screen, DS-style browser game about stocking a grocery store. You drive a walkie pallet truck modeled on the Raymond 8210 from the warehouse door to a shelf location, then unload the pallet case by case onto the right spots. It started as a design for a Nintendo DS homebrew game (DSPico) and is being prototyped as a web game that runs on a phone.
+IDLA is a two-screen, DS-style browser game about stocking a grocery store. You drive a walkie pallet truck from the warehouse door to a shelf location, then unload the pallet case by case onto the right spots. It started as a design for a Nintendo DS homebrew game (DSPico) and is being prototyped as a web game that runs on a phone.
 
-Made by Keith (Beachkila) / Studio Wetware.
+Made by Beach / Studio Wetware.
 
 ## How it plays
 
