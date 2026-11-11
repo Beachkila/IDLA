@@ -389,38 +389,35 @@ function buildWorld() {
   // island bodies
   g.fillStyle = '#80848a';
   for (const r of SOLID.slice(4, 10)) g.fillRect(r[0] * PX, r[1] * PX, (r[2] - r[0]) * PX, (r[3] - r[1]) * PX);
-  // faces: product dots, colored stripe with name, tag strip with section numbers
+  // faces: product dots, then one colored band per run with a dark name plate (no section tags)
+  const plate = (cx, cy, name, col) => {
+    const w = tw(name) + 10, x = Math.round(cx - w / 2), y = Math.round(cy - 6);
+    g.fillStyle = INK; g.fillRect(x, y, w, 12);
+    g.fillStyle = UI2; g.fillRect(x + 1, y + 1, w - 2, 10);
+    g.fillStyle = col; g.fillRect(x + 1, y + 1, 2, 10);
+    text(g, name, x + 6, y + 3, PAPER);
+  };
   FACES.forEach((f, i) => {
     const r = faceRect(f).map(v => v * PX);
     const [x0, y0, x1, y1] = r;
     dots(g, x0, y0, x1 - x0, y1 - y0, 1000 + i * 77);
-    g.fillStyle = AC[f.a];
+    const col = AC[f.a], name = ANAME[f.a];
     if (f.ax === 'h') {
       const edge = f.side > 0 ? y1 : y0;
-      const sy = f.side > 0 ? edge - 14 : edge + 7;   // name stripe
-      const ty = f.side > 0 ? edge - 7 : edge;        // tag strip
-      g.fillRect(x0, sy, x1 - x0, 7);
-      g.fillStyle = '#fafaf4'; g.fillRect(x0, ty, x1 - x0, 7);
+      const by = f.side > 0 ? edge - 14 : edge;          // 14 px band along the aisle edge
+      g.fillStyle = col; g.fillRect(x0, by, x1 - x0, 14);
+      g.fillStyle = 'rgba(0,0,0,.18)'; g.fillRect(x0, f.side > 0 ? by : by + 12, x1 - x0, 2);
       g.fillStyle = INK; g.fillRect(x0, f.side > 0 ? edge - 1 : edge, x1 - x0, 1);
-      for (let s = 0; s < f.n; s++) {
-        const sx = x0 + s * 32;
-        g.fillStyle = INK; g.fillRect(sx, ty, 1, 7);
-        text(g, pad2(f.off + s + 1), sx + 3, ty + 1, BAD);
-      }
-      for (let cx = x0 + 64; cx < x1 - 20; cx += 128) textC(g, ANAME[f.a], cx, sy + 1, INK);
-      if (x1 - x0 < 128) textC(g, ANAME[f.a], (x0 + x1) / 2, sy + 1, INK);
+      const pw = tw(name) + 10, cy = by + 7;
+      if (x1 - x0 < pw * 2 + 40) plate((x0 + x1) / 2, cy, name, col);
+      else for (let cx = x0 + 80; cx < x1 - pw / 2; cx += 160) plate(cx, cy, name, col);
     } else {
       const edge = x0;
-      g.fillRect(edge + 7, y0, 7, y1 - y0);
-      g.fillStyle = '#fafaf4'; g.fillRect(edge, y0, 8, y1 - y0);
+      g.fillStyle = col; g.fillRect(edge, y0, 14, y1 - y0);
+      g.fillStyle = 'rgba(0,0,0,.18)'; g.fillRect(edge + 12, y0, 2, y1 - y0);
       g.fillStyle = INK; g.fillRect(edge, y0, 1, y1 - y0);
-      for (let s = 0; s < f.n; s++) {
-        const sy = y0 + s * 32;
-        g.fillStyle = INK; g.fillRect(edge, sy, 8, 1);
-        text(g, pad2(f.off + s + 1), edge + 1, sy + 3, BAD);
-      }
-      g.save(); g.translate(edge + 13, (y0 + y1) / 2); g.rotate(-Math.PI / 2);
-      textC(g, ANAME[f.a], 0, -5, INK); g.restore();
+      g.save(); g.translate(edge + 7, (y0 + y1) / 2); g.rotate(-Math.PI / 2);
+      plate(0, 0, name, col); g.restore();
     }
   });
   // island outlines + spine
@@ -677,7 +674,7 @@ function requestTask() {
   if (NET.state === 'on') netSend({ t: 'task', k: G.palletNo - 1, prev: G.prevArea || '' });
   else if (NET.state !== 'connecting') giveLocalTask();
 }
-function tagStr(t) { return t.face.a + ' ' + pad2(t.tags[0]) + '-' + pad2(t.tags[1]); }
+function tagStr(t) { return ANAME[t.face.a]; }
 function toast(s, t = 2.2) { G.toast = s; G.toastT = t; }
 
 // ---------- truck geometry ----------
@@ -1038,7 +1035,6 @@ function drawDriveTop() {
   else if (G.truck.loaded) {
     const n = ANAME[G.task.face.a].split(/[ +]/);
     for (const w of n) L(w, AC[G.task.face.a] === '#ebebe1' ? PAPER : AC[G.task.face.a]);
-    L(pad2(G.task.tags[0]) + '-' + pad2(G.task.tags[1]), HI);
   } else { L('BACK', PAPER); K('to pickup'); }
   y += 4; K('Score'); L(G.score, HI);
   K('Combo'); L('X' + G.combo, GOOD);
@@ -1194,7 +1190,7 @@ function drawBattleTop() {
   }
   T.fillStyle = AC[a]; T.fillRect(0, 112, SW, 6);
   T.fillStyle = '#fafaf4'; T.fillRect(0, 118, SW, 7); T.fillStyle = INK; T.fillRect(0, 125, SW, 1);
-  for (let i = 0; i < 3; i++) textC(T, a + '-' + pad2(G.task.tags[0] + i), 43 + i * 85, 118, BAD);
+  textC(T, ANAME[a], 66, 118, INK);
   T.fillStyle = '#c4c8c2'; T.fillRect(0, 126, SW, 66);
   // pallet as the opponent; the stack shrinks as cases come off
   const frac = b.queue.length / b.total, h = Math.round(23 * frac), sc = 4;
@@ -1208,9 +1204,8 @@ function drawBattleTop() {
   for (let i = 1; i <= 3; i++) if (b.queue[i]) caseIcon(T, 9 + (i - 1) * 34, 30, 30, 26, b.queue[i]);
   // status panel
   panel(T, 4, 130, 124, 189);
-  textFit(T, ANAME[a], 9, 135, AC[a] === '#ebebe1' ? PAPER : AC[a], 70);
-  const tg = pad2(G.task.tags[0]) + '-' + pad2(G.task.tags[1]); textA(T, tg, 119 - tw(tg, 1, 'A'), 135, HI);
-  textA(T, 'Cases ' + b.queue.length + '/' + b.total, 9, 147, MUTE); bar(T, 62, 146, 56, frac, BAD);
+  textFit(T, ANAME[a], 9, 135, AC[a] === '#ebebe1' ? PAPER : AC[a], 110);
+    textA(T, 'Cases ' + b.queue.length + '/' + b.total, 9, 147, MUTE); bar(T, 62, 146, 56, frac, BAD);
   textA(T, 'Score', 9, 158, MUTE); const sv = String(G.score); text(T, sv, 119 - tw(sv), 158, PAPER);
   textA(T, 'Combo', 9, 174, MUTE); text(T, 'X' + G.combo, 40, 170, G.combo >= 3 ? HI : PAPER, 2);
   // popups
@@ -1228,7 +1223,6 @@ function drawBattleBottom() {
   const b = G.battle, a = G.task.face.a;
   B.fillStyle = '#2c303c'; B.fillRect(0, 0, SW, SH);
   text(B, ANAME[a], 6, 4, PAPER);
-  textA(B, a + '-' + pad2(G.task.tags[0]) + ' / ' + pad2(G.task.tags[0] + 1) + ' / ' + pad2(G.task.tags[1]), 12 + tw(ANAME[a]), 5, MUTE);
   drawMenuButton();
   const cur = b.queue[0];
   for (let sec = 0; sec < 3; sec++) {
