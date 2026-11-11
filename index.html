@@ -489,10 +489,11 @@ let state = 'title', mode = MODES.newhire, modeKey = 'newhire';
 const CHARS = [
   // stats: SPEED, LOAD, FIT, CALM on 0-10 (5 = standard). The real numbers are in pros/cons.
   { pre: '', por: 'por0', name: 'STOCKER 1', tag: '#f0c890', stats: [5, 5, 5, 5], pros: ['Standard stocker'], cons: ['No drawbacks'] },
-  { pre: 'f_', por: 'por1', name: 'STOCKER 2', tag: '#8cb8f0', stats: [6, 5, 5, 2], pros: ['1.5% faster'], cons: ['Shoppers ask her twice', 'as often, in every mode', 'with carts. Half points', 'for right answers'] },
+  { pre: 'f_', por: 'por1', name: 'STOCKER 2', tag: '#8cb8f0', stats: [8, 5, 5, 2], pros: ['10% faster on the jack', '5% faster on the Zamboni'], cons: ['Shoppers ask her twice', 'as often, in every mode', 'with carts. Half points', 'for right answers'] },
   { pre: 'h_', por: 'por2', name: 'STOCKER 3', tag: '#6ed2c8', stats: [4, 10, 4, 5], pros: ['Stacker jack: carries', '2 pallets per trip'], cons: ['Jack is 1.5% wider', 'and 1.5% slower'] },
 ];
-const SPEEDK = [1, 1.015, 0.985];
+const SPEEDK = [1, 1.10, 0.985];        // pallet jack
+const ZSPEEDK = [1, 1.05, 0.985];       // Zamboni
 const ASKER = () => charIdx === 1;          // stocker 2: shoppers ask twice as often, half points
 const STACKER = () => charIdx === 2;        // stocker 3: two pallets per trip, wider jack
 let charIdx = 0;
@@ -851,7 +852,7 @@ function drive(t, dt) {
   const MAXD = 1.4;                                   // ~80 deg tiller
   const target = Math.max(-MAXD, Math.min(MAXD, rel));
   t.delta += Math.max(-6 * dt, Math.min(6 * dt, target - t.delta));
-  const speed = (mode.zamboni ? (rev ? 1.5 : ZSPEEDS[G.zam.speed].v) : (rev ? 3.2 : (t.loaded ? 6 : 7.5))) * m * SPEEDK[charIdx];
+  const speed = (mode.zamboni ? (rev ? 1.5 : ZSPEEDS[G.zam.speed].v) : (rev ? 3.2 : (t.loaded ? 6 : 7.5))) * m * (mode.zamboni ? ZSPEEDK : SPEEDK)[charIdx];
   const ang = (rev ? t.h + Math.PI : t.h) + t.delta;
   const f = fwdOf(t.h), Lx = t.x - f[0] * WB, Ly = t.y - f[1] * WB;
   // trucks I'm already touching (e.g. both spawned on one spot) don't block me, so we can separate
