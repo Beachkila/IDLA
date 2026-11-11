@@ -263,13 +263,14 @@ const LANES_X = [11, 45, 107], LANES_Y = [12, 30, 47, 65, 83];
 const MODES = {
   newhire: { name:'NEW HIRE', block:true,  hint:true,  carts:0, help:false, pallets:1 },
   easy:    { name:'EASY',     block:false, hint:false, carts:0, help:false, pallets:2 },
-  medium:  { name:'MEDIUM',   block:false, hint:false, carts:3, help:false, pallets:3 },
+  medium:  { name:'MEDIUM',   block:false, hint:false, carts:3, help:false, pallets:2 },
   hard:    { name:'HARD',     block:false, hint:false, carts:4, help:true, pallets:4 },
   daily:   { name:'DAILY SHIFT', block:false, hint:false, carts:3, help:false, daily:true, pallets:4 },
   zamboni: { name:'ZAMBONI', block:false, hint:false, carts:0, help:false, zamboni:true },
+  cashier: { name:'CASHIER', block:false, hint:false, carts:0, help:false, cashier:true },
 };
-const MODE_KEYS = ['zamboni', 'newhire', 'easy', 'medium', 'hard', 'daily'];
-const MODE_SHORT = { newhire:'NEW', easy:'EASY', medium:'MED', hard:'HARD', daily:'DAILY', zamboni:'ZAMB' };
+const MODE_KEYS = ['zamboni', 'cashier', 'newhire', 'medium', 'hard', 'daily'];   // Easy retired
+const MODE_SHORT = { newhire:'NEW', easy:'EASY', medium:'MED', hard:'HARD', daily:'DAILY', zamboni:'ZAMB', cashier:'CASH' };
 
 // ---------- helpers ----------
 const rnd = (a, b) => a + Math.random() * (b - a);
@@ -517,6 +518,11 @@ function newShift(k) {
   if (ASKER()) G.helpT /= 2;
   for (let i = 0; i < mode.carts; i++) G.carts.push(newCart(i));
   state = 'drive';
+  if (mode.cashier) {
+    G.cash = cashStart(); G.truck.loaded = false; G.pallets = 0; state = 'cashier';
+    netJoin(k);
+    return;
+  }
   if (mode.zamboni) {
     G.zam = zamStart(); G.truck.loaded = false; G.pallets = 0;
     toast('SCRUB AS MUCH FLOOR AS YOU CAN!', 3);
@@ -575,6 +581,7 @@ function netMsg(m) {
     if (G && !G.task && G.truck.loaded) netSend({ t: 'task', k: G.palletNo - 1, prev: G.prevArea || '' });
   } else if (m.t === 'join') NET.others.set(m.id, { ini: m.ini, char: m.char, snaps: [], honk: 0 });
   else if (m.t === 'leave') NET.others.delete(m.id);
+  else if (m.t === 'stat') { const o = NET.others.get(m.id); if (o) o.stat = { ipm: m.ipm, c: m.c, n: m.n }; }
   else if (m.t === 's') {
     const now = performance.now(), seen = new Set();
     for (const [id, x, y, h, l, pl, f, u] of m.ps) {
@@ -768,20 +775,24 @@ function truckAABB(t, pad = 0) {
 }
 
 // ---------- carts ----------
+// carts follow the aisle grid but drift to a random spot across each aisle's width (up to 2.5 ft off center)
+const CART_SPREAD = 2.5;
 function newCart(i) {
-  let x, y;
-  do { x = pick(LANES_X); y = pick(LANES_Y); } while (Math.hypot(x - 64, y - 83) < 25);
-  const c = { x, y, tx: x, ty: y, horiz: false, wait: 0, skin: 'c' + (i % 3), stopped: 0, help: false };
+  const off = () => rnd(-CART_SPREAD, CART_SPREAD);
+  let xi, yi;
+  do { xi = rri(LANES_X.length); yi = rri(LANES_Y.length); } while (Math.hypot(LANES_X[xi] - 64, LANES_Y[yi] - 83) < 25);
+  const x = LANES_X[xi] + off(), y = LANES_Y[yi] + off();
+  const c = { x, y, tx: x, ty: y, xi, yi, pxi: -1, pyi: -1, horiz: false, wait: 0, skin: 'c' + (i % 3), stopped: 0, help: false };
   chooseNext(c); return c;
 }
 function chooseNext(c) {
-  const opts = [];
-  const xi = LANES_X.indexOf(Math.round(c.x)), yi = LANES_Y.indexOf(Math.round(c.y));
-  if (xi > 0) opts.push([LANES_X[xi - 1], c.y]); if (xi < LANES_X.length - 1) opts.push([LANES_X[xi + 1], c.y]);
-  if (yi > 0) opts.push([c.x, LANES_Y[yi - 1]]); if (yi < LANES_Y.length - 1) opts.push([c.x, LANES_Y[yi + 1]]);
-  const back = opts.filter(o => !(o[0] === c.px && o[1] === c.py));
+  const off = () => rnd(-CART_SPREAD, CART_SPREAD), opts = [];
+  if (c.xi > 0) opts.push([c.xi - 1, c.yi]); if (c.xi < LANES_X.length - 1) opts.push([c.xi + 1, c.yi]);
+  if (c.yi > 0) opts.push([c.xi, c.yi - 1]); if (c.yi < LANES_Y.length - 1) opts.push([c.xi, c.yi + 1]);
+  const back = opts.filter(o => !(o[0] === c.pxi && o[1] === c.pyi));
   const o = pick(back.length ? back : opts);
-  c.px = c.x; c.py = c.y; c.tx = o[0]; c.ty = o[1];
+  c.pxi = c.xi; c.pyi = c.yi; c.xi = o[0]; c.yi = o[1];
+  if (o[0] !== c.pxi) { c.tx = LANES_X[o[0]] + off(); c.ty = c.y; } else { c.tx = c.x; c.ty = LANES_Y[o[1]] + off(); }
 }
 function updateCarts(dt) {
   const tr = truckAABB(G.truck, 0.6);
@@ -970,7 +981,9 @@ function place(s) {
   }
 }
 function endShift() {
-  if (mode.zamboni) {
+  if (mode.cashier) {
+    G.timeBonus = 0; G.auditPenalty = 0; G.final = G.score;
+  } else if (mode.zamboni) {
     G.cover = Math.min(1000, Math.round(G.zam.credit / ZWALKN * 1000));   // tenths of a percent of the floor you cleaned
     G.timeBonus = 0; G.auditPenalty = 0;
     G.final = G.cover * 10 + G.zam.spillsDone * 150 + G.score;
@@ -980,6 +993,7 @@ function endShift() {
     G.auditPenalty = G.auditErrors * 150;
     G.final = G.score + G.timeBonus - G.auditPenalty;
   }
+  if (modeKey === 'newhire') store('newhire.day', pacificNow().day);
   const key = 'best.' + modeKey + (mode.daily ? '.' + G.day : '');
   const best = store(key);
   G.newBest = !best || G.final > best.score;
@@ -1336,10 +1350,15 @@ function drawTitle(t) {
   textAC(B, 'studiowetware.com', 128, 179, LINE);
   BTN.push({ r: [56, 166, 200, 188], f: () => { try { window.open('https://studiowetware.com', '_blank', 'noopener'); } catch (e) {} } });
 }
-const MODE_ROWS = { zamboni: ['ZAMBONI', "2 minutes 'til open", '#ec7020'], newhire: ['NEW HIRE', 'Wrong spots are blocked. 1 pallet', GOOD],
-  easy: ['EASY', 'No blocking, audit at the end. 2 pallets', '#3c78d2'], medium: ['MEDIUM', 'Easy + carts in the aisles. 3 pallets', HI],
+const MODE_ROWS = { zamboni: ['ZAMBONI', "2 minutes 'til open", '#ec7020'], cashier: ['CASHIER', 'Scan fast, key produce, make change. 2 min', '#e65a8c'], newhire: ['NEW HIRE', 'Wrong spots are blocked. 1 pallet, once a day', GOOD],
+  easy: ['EASY', 'No blocking, audit at the end. 2 pallets', '#3c78d2'], medium: ['MEDIUM', 'Carts in the aisles, audit at the end. 2 pallets', HI],
   hard: ['HARD', 'Medium + shoppers need help. 4 pallets', BAD], daily: ['DAILY SHIFT', 'Same pallets for everyone today. 4 pallets', '#965aaa'] };
 let COUNTS = null, COUNTS_T = 0;
+// New Hire: one finished run per day, the day turning over at midnight Pacific
+const PT_FMT = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Los_Angeles', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+function pacificNow() { const p = Object.fromEntries(PT_FMT.formatToParts(new Date()).map(x => [x.type, x.value])); return { day: p.year + '-' + p.month + '-' + p.day, mins: +p.hour * 60 + +p.minute }; }
+function newHireDone() { return store('newhire.day') === pacificNow().day; }
+function untilPacificMidnight() { const m = 1440 - pacificNow().mins; return Math.floor(m / 60) + 'h ' + (m % 60) + 'm'; }
 function pollCounts(dt) {
   if (!FLOOR_API) return;
   COUNTS_T -= dt; if (COUNTS_T > 0) return; COUNTS_T = 8;
@@ -1353,7 +1372,8 @@ function drawModes(t) {
   BTN = [];
   MODE_KEYS.forEach((k, i) => {
     const [n, d, col] = MODE_ROWS[k], y = 16 + i * 25, r = [10, y, 246, y + 23];
-    bigButton(r, n, d, col);
+    const locked = k === 'newhire' && newHireDone();
+    bigButton(r, n, locked ? 'Done for today. Back in ' + untilPacificMidnight() : d, locked ? LINE : col);
     if (FLOOR_API) {
       const c = COUNTS ? (COUNTS[k] | 0) : null, lab = c === null ? '-/12' : c + '/12', on = c > 0;
       const w = tw(lab, 1, 'A') + 14, x1 = r[2] - 5, x0 = x1 - w;
@@ -1361,7 +1381,7 @@ function drawModes(t) {
       B.fillStyle = on ? GOOD : LINE; B.fillRect(x0 + 4, y + 8, 3, 3);
       textA(B, lab, x0 + 9, y + 7, on ? GOOD : MUTE);
     }
-    BTN.push({ r, f: () => newShift(k) });
+    BTN.push({ r, f: () => { if (k === 'newhire' && newHireDone()) { beep(150, 0.15, 'sawtooth', 0.05); return; } newShift(k); } });
   });
   const back = [10, 168, 96, 188], nm = [150, 168, 246, 188];
   panel(B, back[0], back[1], back[2], back[3], UI); textC(B, '< BACK', 53, 175, PAPER);
@@ -1417,7 +1437,10 @@ function drawResults() {
   T.fillStyle = UI2; T.fillRect(0, 0, SW, SH);
   textC(T, 'SHIFT COMPLETE', 128, 10, HI, 2);
   textC(T, mode.name + (mode.daily ? '  ' + G.day : ''), 128, 30, MUTE);
-  const L = mode.zamboni
+  const C = G.cash;
+  const L = mode.cashier
+    ? [['ITEMS SCANNED', C.items], ['ITEMS PER MIN', Math.round(C.items / 2)], ['CLEAN SCANS', C.clean], ['PRODUCE CODES', C.codes + (C.lookups ? ' (' + C.lookups + ' LOOKUP)' : '')], ['ORDERS', C.orders], ['CHANGE RIGHT', C.changeOk + ' OF ' + (C.changeOk + C.changeBad)], ['BEST COMBO', 'X' + G.bestCombo]]
+    : mode.zamboni
     ? [['TIME', fmtClock(G.clock)], ['FLOOR CLEANED', (G.cover / 10).toFixed(1) + '%'], ['SPILLS CLEANED', G.zam.spillsDone + ' OF ' + G.zam.spills.length], ['SHELF BUMPS', G.scrapes]]
     : [['TIME', fmtClock(G.clock)], ['PLACEMENTS', G.placed], ['CORRECT', G.correct], ['BEST COMBO', 'X' + G.bestCombo], ['SHELF CLIPS', G.scrapes]];
   if (G.crashes) L.push(['STOCKER CRASHES', G.crashes]);
@@ -1429,15 +1452,17 @@ function drawResults() {
 
   B.fillStyle = UI2; B.fillRect(0, 0, SW, SH);
   textC(B, 'SCORE', 128, 6, HI);
-  const R = mode.zamboni
+  const R = mode.cashier
+    ? [['REGISTER SCORE', G.score]]
+    : mode.zamboni
     ? [['FLOOR CLEANED', '+' + G.cover * 10], ['SPILLS', '+' + G.zam.spillsDone * 150], ['SHELF BUMPS', String(G.score)]]
     : [['FLOOR SCORE', G.score], ['TIME BONUS', '+' + G.timeBonus]];
-  if (!mode.block && !mode.zamboni) R.push(['AUDIT: ' + G.auditErrors + ' WRONG', '-' + G.auditPenalty]);
+  if (!mode.block && !mode.zamboni && !mode.cashier) R.push(['AUDIT: ' + G.auditErrors + ' WRONG', '-' + G.auditPenalty]);
   R.forEach(([k, v], i) => { text(B, k, 22, 20 + i * 12, PAPER); text(B, String(v), 234 - tw(v), 20 + i * 12, String(v)[0] === '-' && v !== '-0' ? BAD : PAPER); });
   const fy = 20 + R.length * 12;
   B.fillStyle = LINE; B.fillRect(22, fy - 2, 212, 1);
   text(B, 'FINAL', 22, fy + 3, HI, 2); text(B, String(G.final), 234 - tw(G.final, 2), fy + 3, HI, 2);
-  const sc = mode.zamboni ? [3200, 2200, 1200] : [2250, 1500, 750].map(v => v * G.pallets);
+  const sc = mode.cashier ? [3000, 2000, 1000] : mode.zamboni ? [3200, 2200, 1200] : [2250, 1500, 750].map(v => v * G.pallets);
   const stars = G.final > sc[0] ? 3 : G.final > sc[1] ? 2 : G.final > sc[2] ? 1 : 0;
   textC(B, ['KEEP PRACTICING', 'GOOD SHIFT', 'GREAT SHIFT', 'STORE MANAGER MATERIAL'][stars], 128, 84, [MUTE, PAPER, GOOD, HI][stars]);
   for (let i = 0; i < 3; i++) text(B, '*', 98 + i * 22, 95, i < stars ? HI : LINE, 2);
@@ -1455,9 +1480,12 @@ function drawResults() {
     textAC(B, P.status === 'ok' ? 'Posted as ' + P.ini + '. Tap to see the scoreboard' : 'Sending your score as ' + (store('initials') || 'AAA'), 128, 135, '#c8d8f0');
     if (P.status === 'ok') BTN.push({ r: post, f: () => { BV = { mode: modeKey, range: mode.daily ? 'today' : 'all', back: 'results', highlight: P.id, note: 'RANK #' + P.rank + (mode.daily ? ' TODAY' : ' ALL TIME') }; loadBoard(BV.mode, BV.range, true); state = 'board'; } });
   }
-  panel(B, again[0], again[1], again[2], again[3], UI); textC(B, 'AGAIN', 68, 163, PAPER, 2);
+  const noAgain = modeKey === 'newhire' && newHireDone();
+  panel(B, again[0], again[1], again[2], again[3], UI);
+  if (noAgain) { const cd = untilPacificMidnight().toUpperCase(); textC(B, cd, 68, 163, MUTE, tw(cd, 2) <= 104 ? 2 : 1); }
+  else textC(B, 'AGAIN', 68, 163, PAPER, 2);
   panel(B, menu[0], menu[1], menu[2], menu[3], UI); textC(B, 'MENU', 188, 163, PAPER, 2);
-  BTN.push({ r: again, f: () => newShift(modeKey) }, { r: menu, f: () => { state = 'title'; } });
+  BTN.push({ r: again, f: () => { if (!noAgain) newShift(modeKey); else beep(150, 0.15, 'sawtooth', 0.05); } }, { r: menu, f: () => { state = 'title'; } });
 }
 
 // ---------- initials entry (arcade style) ----------
@@ -1499,7 +1527,9 @@ async function postScore() {
   try {
     const res = await fetch(API + '/scores', {
       method: 'POST', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(mode.zamboni
+      body: JSON.stringify(mode.cashier
+        ? { mode: modeKey, initials: ini, score: g.final, time_s: 120, placed: g.cash.items, correct: g.cash.clean, pallets: 0, helps: 0, char: charIdx, device: DEVICE, day: g.day }
+        : mode.zamboni
         ? { mode: modeKey, initials: ini, score: g.final, time_s: Math.round(g.clock * 10) / 10,
             placed: g.zam.spillsDone, correct: g.cover, pallets: 0, helps: 0, char: charIdx, device: DEVICE, day: g.day }
         : { mode: modeKey, initials: ini, score: g.final, time_s: Math.round(g.clock * 10) / 10,
@@ -1547,9 +1577,9 @@ function drawBoard() {
   // bottom: tabs + list
   B.fillStyle = UI2; B.fillRect(0, 0, SW, SH);
   BTN = [];
-  const TAB = { zamboni: 'ZAMB', newhire: 'NEW', easy: 'EASY', medium: 'MED', hard: 'HARD', daily: 'DAY' };
+  const TAB = { zamboni: 'ZAMB', cashier: 'CASH', newhire: 'NEW', easy: 'EASY', medium: 'MED', hard: 'HARD', daily: 'DAY' };
   MODE_KEYS.forEach((k, i) => {
-    const t = [3 + i * 42, 3, 3 + i * 42 + 40, 19], on = k === m;
+    const t = [2 + i * 36, 3, 2 + i * 36 + 35, 19], on = k === m;
     panel(B, t[0], t[1], t[2], t[3], on ? '#3a3e4a' : UI);
     if (on) { B.fillStyle = HI; B.fillRect(t[0] + 2, t[3] - 2, t[2] - t[0] - 3, 2); }
     textC(B, TAB[k], (t[0] + t[2]) / 2 + 1, 7, on ? HI : PAPER);
@@ -1756,11 +1786,319 @@ function drawZamTop() {
   textFit(T, G.toastT > 0 ? G.toast : 'SCRUB THE DARK FLOOR CLEAN', 5, 179, G.toastT > 0 ? HI : PAPER, 194);
 }
 
+// ---------- Cashier: 2-minute register shift. Turn each item until its barcode faces the glass, scan.
+// Produce has no barcode: type its real store code. Cash orders end with making change. ----------
+const PLU = { APPLES: '4016', BANANA: '4011', ONIONS: '4093', LETTUC: '4061', TOMATO: '4064', CARROT: '4562', LEMONS: '4053', GRAPES: '4022' };
+const PLU_NAME = { APPLES: 'RED APPLES', BANANA: 'BANANAS', ONIONS: 'YELLOW ONIONS', LETTUC: 'LETTUCE', TOMATO: 'TOMATOES', CARROT: 'CARROTS', LEMONS: 'LEMONS', GRAPES: 'GREEN GRAPES' };
+const CASH_SECONDS = 120, BELT_X0 = 40, BELT_X1 = 196, BELT_GAP = 34, BELT_FULL = 5;
+const DENOMS = [2000, 1000, 500, 100, 25, 10, 5, 1];        // cents
+const FACE_NAMES = { F: 'facing the glass', R: 'on the right side', L: 'on the left side', T: 'on top', D: 'on the bottom', B: 'on the back' };
+function nameHash(s) { let h = 0; for (const c of s) h = (h * 31 + c.charCodeAt(0)) >>> 0; return h; }
+function priceOf(n) { return 79 + (nameHash(n) % 720); }  // $0.79 .. $7.98, same every shift
+function itemShape(n) { return [[30, 40, 14], [42, 28, 16], [34, 34, 18], [26, 44, 12]][nameHash(n) % 4]; }
+const fmtMoney = c => '$' + (c / 100).toFixed(2);
+function cashStart() {
+  const C = { left: CASH_SECONDS, belt: [], spawnT: 0.1, order: null, hand: null, phase: 'wait', payT: 0,
+    items: 0, clean: 0, codes: 0, lookups: 0, orders: 0, changeOk: 0, changeBad: 0, drain: 0, statT: 0,
+    dirT: 0, dir: null, flash: null, flashT: 0, keyed: '', lookT: 0, give: [], pay: null, orderQ: [] };
+  newOrder(C); return C;
+}
+// orders line up on the belt: C.orderQ[0] is the one being rung up, the last one is still being unloaded
+function newOrder(C) {
+  const all = Object.values(PRODUCTS).flat(), n = 4 + rri(5), list = [];
+  for (let i = 0; i < n; i++) list.push(Math.random() < 0.22 ? rpick(PRODUCTS.PRODUCE) : rpick(all));
+  C.orderQ.push({ queue: list, total: 0, count: n, cash: Math.random() < 0.45 });
+  C.order = C.orderQ[0];
+}
+function newHand(n) {
+  const produce = !!PLU[n];
+  // spin only: the barcode is on one of the four sides (never top or bottom)
+  const h = { n, produce, pos: { F: 0, R: 1, B: 2, L: 3, T: 4, D: 5 }, bc: 1 + rri(3), bad: 0 };
+  for (let i = 0; i < 1 + rri(3); i++) turnItem(h, Math.random() < 0.5 ? 1 : -1, true);
+  if (!produce && h.pos.F === h.bc) turnItem(h, 1, true);   // never start already facing the glass
+  return h;
+}
+function turnItem(h, d, quiet) {   // d = 1: spin right (front goes to the right side)
+  const p = h.pos;
+  h.pos = d > 0 ? { ...p, R: p.F, B: p.R, L: p.B, F: p.L } : { ...p, L: p.F, B: p.L, R: p.B, F: p.R };
+  if (!quiet) beep(300, 0.025);
+}
+function tipItem(h, d, quiet) {    // d = 1: tip toward you (top comes to the front)
+  const p = h.pos;
+  h.pos = d > 0 ? { ...p, F: p.T, D: p.F, B: p.D, T: p.B } : { ...p, T: p.F, B: p.T, D: p.B, F: p.D };
+  if (!quiet) beep(260, 0.025);
+}
+function barcodeAt(h) { for (const k in h.pos) if (h.pos[k] === h.bc) return k; return 'F'; }
+function cashFlash(C, s, good) { C.flash = s; C.flashT = 1.1; C.flashGood = good; }
+function cashScan() {
+  const C = G.cash, h = C.hand; if (!h || h.produce || C.phase !== 'turn') return;
+  if (barcodeAt(h) !== 'F') {                     // dead beep: nothing to read
+    h.bad++; G.combo = 0; G.score -= 5; beep(110, 0.18, 'sawtooth', 0.06); cashFlash(C, 'NO READ  -5', false); return;
+  }
+  const clean = !h.bad;
+  if (clean) { G.combo++; C.clean++; } else G.combo = 1;
+  G.bestCombo = Math.max(G.bestCombo, G.combo);
+  const pts = clean ? 20 + Math.min(G.combo, 20) * 2 : 10;
+  G.score += pts; beep(1760, 0.06, 'square', 0.05);
+  cashFlash(C, (G.combo >= 3 ? 'X' + G.combo + ' ' : '') + '+' + pts, true);
+  cashDone(C, h);
+}
+function cashDone(C, h) {
+  C.items++; C.order.total += priceOf(h.n); C.hand = null; C.phase = 'wait'; C.keyed = '';
+}
+function cashKey(k) {
+  const C = G.cash, h = C.hand; if (C.phase !== 'code' || C.lookT > 0) return;
+  if (k === 'CLR') { C.keyed = ''; beep(400, 0.03); return; }
+  if (k === 'LOOKUP') { C.lookT = 3; C.keyed = PLU[h.n]; C.lookups++; beep(300, 0.08); return; }
+  if (k === 'OK') {
+    if (C.keyed === PLU[h.n]) {
+      G.combo++; C.codes++; G.bestCombo = Math.max(G.bestCombo, G.combo);
+      const pts = 30 + Math.min(G.combo, 20) * 2; G.score += pts; beep(1760, 0.06, 'square', 0.05);
+      cashFlash(C, 'CODE OK  +' + pts, true); cashDone(C, h);
+    } else { G.combo = 0; G.score -= 10; C.keyed = ''; beep(110, 0.18, 'sawtooth', 0.06); cashFlash(C, 'WRONG CODE  -10', false); }
+    return;
+  }
+  if (C.keyed.length < 4) { C.keyed += k; beep(600 + Number(k) * 30, 0.03); }
+}
+function cashGive(c) {
+  const C = G.cash; if (C.phase !== 'change') return;
+  if (c === 'UNDO') { C.give.pop(); beep(400, 0.03); return; }
+  if (c === 'CLEAR') { C.give = []; beep(300, 0.05); return; }
+  if (c === 'GIVE') {
+    const sum = C.give.reduce((a, b) => a + b, 0), due = C.pay.cash - C.pay.total;
+    if (sum === due) { C.changeOk++; G.score += 40; cashFlash(C, 'EXACT CHANGE  +40', true); beep(784, 0.08); beep(1046, 0.12); }
+    else { C.changeBad++; G.score -= 30; cashFlash(C, (sum > due ? 'TOO MUCH' : 'SHORT') + '  -30', false); beep(110, 0.2, 'sawtooth', 0.06); }
+    cashOrderDone(C); return;
+  }
+  C.give.push(c); beep(c >= 100 ? 500 : 900, 0.03);
+}
+function cashOrderDone(C) {
+  C.orders++; G.score += 50; C.phase = 'wait'; C.pay = null; C.give = [];
+  C.orderQ.shift(); C.order = C.orderQ[0];
+}
+function cashIPM(C) { const m = (CASH_SECONDS - C.left) / 60; return m > 0.05 ? Math.round(C.items / m) : 0; }
+function updateCashier(dt) {
+  const C = G.cash;
+  C.left -= dt; G.clock += dt; C.flashT = Math.max(0, C.flashT - dt); C.lookT = Math.max(0, C.lookT - dt);
+  if (C.left <= 0) { C.left = 0; G.clock = CASH_SECONDS; endShift(); return; }
+  // belt: new items arrive faster as the shift goes on; the current order then its divider
+  C.spawnT -= dt;
+  const spawnEvery = 1.3 - 0.6 * (1 - C.left / CASH_SECONDS);
+  if (C.spawnT <= 0 && C.belt.length < 9) {
+    C.spawnT = spawnEvery;
+    const sp = C.orderQ[C.orderQ.length - 1];
+    if (sp.queue.length) C.belt.push({ n: sp.queue.shift(), x: BELT_X1 + 20 });
+    else { C.belt.push({ div: true, x: BELT_X1 + 20 }); newOrder(C); }
+  }
+  for (let i = 0; i < C.belt.length; i++) {
+    const e = C.belt[i], stop = i === 0 ? BELT_X0 : C.belt[i - 1].x + (C.belt[i - 1].div ? 10 : BELT_GAP);
+    e.x = Math.max(stop, e.x - 80 * dt);
+  }
+  // a backed-up belt costs points (customers waiting)
+  const waiting = C.belt.filter(e => !e.div).length;
+  if (waiting >= BELT_FULL) { C.drain += dt * 4; while (C.drain >= 1) { C.drain--; G.score--; } }
+  // take the next item off the belt
+  if (C.phase === 'wait' && C.belt.length && C.belt[0].x <= BELT_X0 + 1) {
+    const e = C.belt[0];
+    if (e.div) {
+      C.belt.shift();
+      C.pay = { total: C.order.total, cash: 0 };
+    } else {
+      C.belt.shift(); C.hand = newHand(e.n); C.phase = C.hand.produce ? 'code' : 'turn';
+    }
+  }
+  // order finished: everything scanned and the divider reached
+  if (C.phase === 'wait' && C.pay) {
+    const total = C.order.total;
+    if (C.order.cash) {
+      const bills = [500, 1000, 2000, 5000, 10000].find(b => b > total) || 10000;
+      C.pay = { total, cash: Math.random() < 0.3 ? bills + 100 * (1 + rri(3)) : bills };
+      if (C.pay.cash <= total) C.pay.cash = bills;
+      C.phase = 'change'; C.give = [];
+    } else { C.pay = { total, card: true }; C.phase = 'card'; C.payT = 0.8; beep(988, 0.06); }
+  }
+  if (C.phase === 'card') { C.payT -= dt; if (C.payT <= 0) cashOrderDone(C); }
+  // stick: turn / tip the item (turn phase); keypad and drawer use the menu highlight
+  if (C.phase === 'turn') {
+    const jx = input.jx + input.kx, jy = input.jy + input.ky;
+    let dir = null;
+    if (Math.abs(jx) > 0.6 && Math.abs(jx) > Math.abs(jy)) dir = jx > 0 ? 'R' : 'L';
+    if (dir && (dir !== C.dir || (C.dirT -= dt) <= 0)) {
+      C.dirT = dir === C.dir ? 0.22 : 0.4;
+      turnItem(C.hand, dir === 'R' ? 1 : -1);
+    }
+    C.dir = dir;
+    if (input.aEdge) cashScan();
+  } else C.dir = null;
+  if (input.bEdge && C.phase === 'turn') { horn(); }
+  // share my register's numbers with the other registers on this floor
+  C.statT -= dt;
+  if (C.statT <= 0) { C.statT = 1; netSend({ t: 'stat', ipm: cashIPM(C), c: G.combo, n: C.items }); }
+}
+// ---------- cashier drawing ----------
+function codeSticker(ctx, x, y, code) {   // little white price-look-up sticker with the code on it
+  const w = tw(code, 1, 'A') + 5;
+  ctx.fillStyle = INK; ctx.fillRect(x - 1, y - 1, w + 2, 9); ctx.fillStyle = '#fafaf4'; ctx.fillRect(x, y, w, 7);
+  text(ctx, code, x + 3, y + 1, INK, 1, 'A');
+}
+function drawCashTop() {
+  const C = G.cash;
+  T.fillStyle = '#c4c8c2'; T.fillRect(0, 0, SW, SH);
+  T.fillStyle = INK; T.fillRect(0, 0, SW, 13);
+  text(T, 'IDLA', 4, 3, HI); text(T, 'CASHIER', 42, 3, PAPER);
+  const lc = fmtClock(Math.ceil(C.left)); text(T, lc, 252 - tw(lc), 3, C.left < 15 && (tt * 4 | 0) % 2 ? BAD : HI);
+  // belt
+  T.fillStyle = '#383a40'; T.fillRect(0, 56, 202, 42);
+  T.fillStyle = '#787c84'; T.fillRect(0, 56, 202, 2); T.fillRect(0, 96, 202, 2);
+  const off = (tt * 40) % 12;
+  T.fillStyle = '#46484f'; for (let x = 202 - off; x > 36; x -= 12) T.fillRect(x, 58, 1, 38);
+  // scanner glass
+  T.fillStyle = INK; T.fillRect(2, 52, 34, 50); T.fillStyle = '#969aa2'; T.fillRect(3, 53, 32, 48);
+  T.fillStyle = '#3c1e28'; T.fillRect(8, 60, 22, 34); T.fillStyle = C.flashT > 0 && C.flashGood ? '#ff6a6a' : '#c8283a'; T.fillRect(10, 62, 18, 30);
+  textAC(T, 'Scan', 19, 105, INK);
+  for (const e of C.belt) {
+    if (e.x > 200) continue;
+    if (e.div) { T.fillStyle = HI; T.fillRect(Math.round(e.x), 58, 3, 38); continue; }
+    T.drawImage(productIcon(e.n), Math.round(e.x), 61, 32, 32);
+    if (PLU[e.n]) codeSticker(T, Math.round(e.x) + 7, 86, PLU[e.n]);
+  }
+  T.fillStyle = '#c4c8c2'; T.fillRect(202, 13, 54, 160);
+  // other registers on this floor
+  const regs = [...NET.others.values()].filter(o => o.stat);
+  if (regs.length) {
+    textA(T, 'Other registers', 8, 116, INK);
+    regs.slice(0, 5).forEach((o, i) => {
+      const y = 126 + i * 9;
+      text(T, o.ini, 8, y, INK); textA(T, o.stat.ipm + ' ipm', 44, y, '#3a3e4a'); textA(T, 'x' + o.stat.c, 84, y, o.stat.c >= 5 ? '#2c7a3c' : '#3a3e4a');
+    });
+  } else textA(T, 'Keep the belt moving. A full belt costs points.', 8, 116, '#3a3e4a');
+  // side panel
+  panel(T, 203, 15, 255, 172, UI2);
+  let y = 21;
+  const K = s => { textA(T, s, 207, y, MUTE); y += 8; }, L = (s, c = PAPER) => { text(T, String(s), 207, y, c); y += 12; };
+  K('IPM'); L(cashIPM(C), HI); K('Score'); L(G.score); K('Combo'); L('X' + G.combo, GOOD); K('Items'); L(C.items); K('Orders'); L(C.orders);
+  K('Belt');
+  const waiting = C.belt.filter(e => !e.div).length, f = Math.min(1, waiting / BELT_FULL);
+  T.fillStyle = '#343844'; T.fillRect(207, y, 44, 5); T.fillStyle = f >= 1 ? BAD : f > 0.6 ? HI : GOOD; T.fillRect(207, y, Math.round(44 * f), 5);
+  if (NET.state === 'on') { y += 10; textA(T, (NET.others.size + 1) + ' here', 207, y, '#8cb8f0'); }
+  // message line
+  T.fillStyle = UI2; T.fillRect(0, 173, SW, 19);
+  const msg = C.flashT > 0 ? C.flash : C.phase === 'turn' ? 'TURN IT. FIND THE BARCODE.' : C.phase === 'code' ? 'PRODUCE: ENTER THE CODE' : C.phase === 'change' ? 'COUNT OUT THE CHANGE' : C.phase === 'card' ? 'CARD APPROVED' : 'NEXT ITEM...';
+  textFit(T, msg, 5, 179, C.flashT > 0 ? (C.flashGood ? GOOD : BAD) : PAPER, 246);
+}
+function drawItem3D(h, cx, cy) {
+  const [w, ht, dp] = itemShape(h.n), col = hashCol(h.n);
+  const shade = (c, k) => { const n = parseInt(c.slice(1), 16); const f = v => Math.max(0, Math.min(255, Math.round(v * k))); return `rgb(${f(n >> 16)},${f((n >> 8) & 255)},${f(n & 255)})`; };
+  const W = w * 2, Hh = ht * 2, D = dp, X = Math.round(cx - (W + D) / 2), Y = Math.round(cy - Hh / 2 + D / 2);
+  // faces: front rect, top parallelogram, right parallelogram
+  const poly = (pts, fill) => { B.fillStyle = fill; B.beginPath(); B.moveTo(pts[0][0], pts[0][1]); for (const p of pts.slice(1)) B.lineTo(p[0], p[1]); B.closePath(); B.fill(); B.strokeStyle = INK; B.lineWidth = 1; B.stroke(); };
+  const fx0 = X, fy0 = Y, fx1 = X + W, fy1 = Y + Hh;
+  poly([[fx0, fy0], [fx0 + D, fy0 - D], [fx1 + D, fy0 - D], [fx1, fy0]], shade(col, 1.18));
+  poly([[fx1, fy0], [fx1 + D, fy0 - D], [fx1 + D, fy1 - D], [fx1, fy1]], shade(col, 0.72));
+  B.fillStyle = INK; B.fillRect(fx0, fy0, W + 1, Hh + 1); B.fillStyle = col; B.fillRect(fx0 + 1, fy0 + 1, W - 1, Hh - 1);
+  // what is on each visible face
+  const face = (id, where) => {
+    if (id === h.bc && !h.produce) {
+      if (where === 'F') { B.fillStyle = PAPER; B.fillRect(fx0 + W / 2 - 14, fy0 + Hh / 2 - 9, 28, 18);
+        B.fillStyle = INK; for (let i = 0; i < 24; i++) if ((i * 7 + (i >> 2)) % 3) B.fillRect(fx0 + W / 2 - 12 + i, fy0 + Hh / 2 - 7, 1, 13); }
+      else if (where === 'R') { B.fillStyle = PAPER; for (let i = 0; i < 7; i++) B.fillRect(fx1 + 2 + i, fy0 + Hh / 2 - 6 - i, 1, 14); B.fillStyle = INK; for (let i = 0; i < 7; i += 2) B.fillRect(fx1 + 2 + i, fy0 + Hh / 2 - 5 - i, 1, 12); }
+      else if (where === 'T') { B.fillStyle = PAPER; B.fillRect(fx0 + W / 2 - 8 + D / 2, fy0 - D / 2 - 2, 16, 4); B.fillStyle = INK; for (let i = 0; i < 16; i += 2) B.fillRect(fx0 + W / 2 - 8 + D / 2 + i, fy0 - D / 2 - 2, 1, 4); }
+    } else if (id === 0 && where === 'F') B.drawImage(productIcon(h.n), Math.round(fx0 + W / 2 - 16), Math.round(fy0 + Hh / 2 - 16), 32, 32);
+    else if (where === 'F') { B.fillStyle = shade(col, 0.82); for (let i = 0; i < 3; i++) B.fillRect(fx0 + 6, fy0 + 8 + i * 8, W - 12, 3); }
+  };
+  face(h.pos.F, 'F'); face(h.pos.R, 'R'); face(h.pos.T, 'T');
+}
+function drawCashBottom() {
+  const C = G.cash;
+  B.fillStyle = UI2; B.fillRect(0, 0, SW, SH);
+  BTN = [];
+  if (C.phase === 'turn' && C.hand) {
+    const h = C.hand;
+    text(B, h.n, 6, 4, PAPER);
+    const where = barcodeAt(h);
+    textA(B, where === 'F' ? 'Barcode is facing the glass: scan!' : 'Barcode is ' + FACE_NAMES[where], 6, 16, where === 'F' ? GOOD : MUTE);
+    drawItem3D(h, 128, 76);
+    const L = [12, 70, 44, 102], Rr = [212, 70, 244, 102], glass = [20, 164, 236, 186];
+    for (const [r, s] of [[L, '<'], [Rr, '>']]) { panel(B, r[0], r[1], r[2], r[3], UI); textC(B, s, (r[0] + r[2]) / 2 + 1, 82, HI); }
+    // ring seen from above: the glass is at the bottom, the dot is where the barcode is now
+    const rx = 128, ry = 145, rr = 13;
+    B.strokeStyle = LINE; B.lineWidth = 2; B.beginPath(); B.arc(rx, ry, rr, 0, 7); B.stroke(); B.lineWidth = 1;
+    B.fillStyle = '#c8283a'; B.fillRect(rx - 9, ry + rr + 3, 18, 3);
+    B.fillStyle = hashCol(h.n); B.fillRect(rx - 6, ry - 6, 12, 12); B.strokeStyle = INK; B.strokeRect(rx - 6.5, ry - 6.5, 13, 13);
+    const ang = { F: Math.PI / 2, R: 0, B: -Math.PI / 2, L: Math.PI }[where];
+    const dx = Math.round(rx + Math.cos(ang) * rr), dy = Math.round(ry + Math.sin(ang) * rr);
+    B.fillStyle = INK; B.fillRect(dx - 5, dy - 5, 10, 10); B.fillStyle = where === 'F' ? GOOD : HI; B.fillRect(dx - 4, dy - 4, 8, 8); B.fillStyle = INK; for (const k of [-2, 0, 2]) B.fillRect(dx + k, dy - 3, 1, 6);
+    textA(B, 'Barcode', rx + 22, ry - 3, MUTE); textA(B, 'Glass', rx - 42, ry + rr - 2, '#e06070');
+    B.fillStyle = INK; B.fillRect(glass[0], glass[1], glass[2] - glass[0], glass[3] - glass[1]);
+    B.fillStyle = '#c8283a'; B.fillRect(glass[0] + 3, glass[1] + 3, glass[2] - glass[0] - 6, glass[3] - glass[1] - 6);
+    textAC(B, 'Tap the glass or press A to scan', 128, 172, PAPER);
+    C.tapZones = { L, R: Rr, glass };
+  } else if (C.phase === 'code' && C.hand) {
+    const h = C.hand;
+    B.drawImage(productIcon(h.n), 10, 8, 48, 48);
+    codeSticker(B, 20, 46, PLU[h.n]);
+    text(B, PLU_NAME[h.n] || h.n, 66, 10, HI);
+    textA(B, C.lookT > 0 ? 'Looking it up...' : 'No barcode: enter the code', 66, 24, MUTE);
+    panel(B, 66, 34, 160, 52, INK); text(B, (C.keyed + '____').slice(0, 4).split('').join(' '), 76, 40, C.lookT > 0 ? HI : GOOD);
+    ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'CLR', '0', 'OK'].forEach((k, i) => {
+      const x = 14 + (i % 3) * 56, y = 62 + (i >> 2 << 0) * 0 + Math.floor(i / 3) * 31, r = [x, y, x + 52, y + 27];
+      panel(B, r[0], r[1], r[2], r[3], k === 'OK' ? '#3c9650' : UI); textC(B, k, x + 27, y + 10, PAPER);
+      BTN.push({ r, f: () => cashKey(k) });
+    });
+    const lk = [186, 62, 248, 120]; panel(B, lk[0], lk[1], lk[2], lk[3], UI); textC(B, 'LOOKUP', 218, 78, HI); textAC(B, '3 sec wait', 217, 96, MUTE);
+    BTN.push({ r: lk, f: () => cashKey('LOOKUP') });
+    textA(B, 'Same code', 186, 140, MUTE); textA(B, 'every shift.', 186, 149, MUTE);
+  } else if (C.phase === 'change' && C.pay) {
+    const sum = C.give.reduce((a, b) => a + b, 0), due = C.pay.cash - C.pay.total;
+    textA(B, 'Change due: ' + fmtMoney(due), 6, 6, GOOD);
+    panel(B, 6, 18, 250, 46, INK);
+    textA(B, 'Total', 14, 22, MUTE); text(B, fmtMoney(C.pay.total), 14, 32, PAPER);
+    textA(B, 'Cash', 96, 22, MUTE); text(B, fmtMoney(C.pay.cash), 96, 32, PAPER);
+    textA(B, 'Giving', 176, 22, MUTE); text(B, fmtMoney(sum), 176, 32, sum === due ? GOOD : HI);
+    const cnt = v => C.give.filter(g => g === v).length;
+    DENOMS.forEach((v, i) => {
+      const bill = v >= 100, col = i % 4, x = 8 + col * 61, y = bill ? 52 : 110;
+      const r = bill ? [x, y, x + 57, y + 32] : [x + 12, y, x + 46, y + 34];
+      if (bill) { B.fillStyle = INK; B.fillRect(r[0], r[1], 57, 32); B.fillStyle = '#64a06e'; B.fillRect(r[0] + 1, r[1] + 1, 55, 30); B.fillStyle = '#4c8a58'; B.fillRect(r[0] + 4, r[1] + 4, 49, 1); B.fillRect(r[0] + 4, r[1] + 27, 49, 1); textC(B, '$' + v / 100, x + 29, y + 12, INK); }
+      else { B.fillStyle = INK; B.beginPath(); B.arc(x + 29, y + 15, 14, 0, 7); B.fill(); B.fillStyle = v === 1 ? '#c47e50' : '#c4c6cc'; B.beginPath(); B.arc(x + 29, y + 15, 13, 0, 7); B.fill(); textAC(B, v + 'c', x + 29, y + 13, INK); }
+      if (cnt(v)) textAC(B, 'x' + cnt(v), x + 29, bill ? y + 35 : y + 32, HI);
+      BTN.push({ r, f: () => cashGive(v) });
+    });
+    const un = [8, 160, 84, 186], cl = [90, 160, 166, 186], gv = [172, 160, 248, 186];
+    panel(B, un[0], un[1], un[2], un[3], UI); textC(B, 'UNDO', 47, 170, PAPER);
+    panel(B, cl[0], cl[1], cl[2], cl[3], UI); textC(B, 'CLEAR', 129, 170, PAPER);
+    panel(B, gv[0], gv[1], gv[2], gv[3], '#3c9650'); textC(B, 'GIVE', 211, 170, PAPER);
+    BTN.push({ r: un, f: () => cashGive('UNDO') }, { r: cl, f: () => cashGive('CLEAR') }, { r: gv, f: () => cashGive('GIVE') });
+    BTN.push({ r: [170, 18, 250, 46], f: () => cashGive('CLEAR') });   // tapping the Giving amount clears it too
+  } else if (C.phase === 'card') {
+    textC(B, 'CARD', 128, 70, PAPER, 2); textC(B, 'APPROVED', 128, 92, GOOD, 2); textAC(B, 'Order ' + fmtMoney(C.pay.total), 128, 116, MUTE);
+  } else textAC(B, 'Next item coming down the belt...', 128, 90, MUTE);
+  drawMenuButton();
+}
+// touch on the bottom screen during the turn phase: buttons, tap the glass, or swipe the item
+function cashPointer(kind, x, y) {
+  const C = G.cash; if (!C || C.phase !== 'turn' || !C.hand) return false;
+  const z = C.tapZones || {};
+  if (kind === 'down') {
+    if (z.L && inside(x, y, z.L)) { turnItem(C.hand, -1); return true; }
+    if (z.R && inside(x, y, z.R)) { turnItem(C.hand, 1); return true; }
+    if (z.glass && inside(x, y, z.glass)) { cashScan(); return true; }
+    C.swipe = [x, y]; return true;
+  }
+  if (kind === 'up' && C.swipe) {
+    const dx = x - C.swipe[0], dy = y - C.swipe[1]; C.swipe = null;
+    if (Math.max(Math.abs(dx), Math.abs(dy)) < 14) return true;
+    if (dy > 30 && y > 150) { cashScan(); return true; }           // dragged down onto the glass
+    if (Math.abs(dx) > Math.abs(dy)) turnItem(C.hand, dx > 0 ? 1 : -1);
+  }
+  return true;
+}
+
 // ---------- in-game menu (opening it takes you off the floor and pauses your clock) ----------
 const MENU_BTN = [212, 2, 253, 15];
 function drawMenuButton() { panel(B, MENU_BTN[0], MENU_BTN[1], MENU_BTN[2], MENU_BTN[3], UI2); textC(B, 'MENU', 233, 5, PAPER); }
 function openMenu() {
-  if (!G || !['drive', 'battle'].includes(state)) return;
+  if (!G || !['drive', 'battle', 'cashier'].includes(state)) return;
   G.menuFrom = state; G.menuView = 'main';
   if (G.battle) G.battle.drag = null;
   state = 'menu'; netSend({ t: 'away' }); beep(520, 0.05);
@@ -1813,6 +2151,7 @@ const NAV = { i: -1, on: false, st: '', hold: 0, dir: null, ini: 0 };
 function navList() {
   if (state === 'drive' && G && G.help && G.help.btns && !G.help.result) return G.help.btns.map(b => ({ r: b.r, f: () => answerHelp(b.a) }));
   if (MENU_STATES.includes(state)) return BTN;
+  if (state === 'cashier' && G && G.cash && (G.cash.phase === 'code' || G.cash.phase === 'change')) return BTN;
   return null;
 }
 function navBack() {
@@ -1866,7 +2205,7 @@ function navUpdate(dt) {
     } else if (!NAV.on || NAV.i < 0 || NAV.i >= list.length) { NAV.on = true; if (NAV.i < 0 || NAV.i >= list.length) NAV.i = 0; beep(880, 0.025); }
     else { if (state !== 'drive') beep(660, 0.06); list[NAV.i].f(); }
   }
-  if (input.bEdge && state !== 'drive') {
+  if (input.bEdge && state !== 'drive' && state !== 'cashier') {
     input.bEdge = false;
     horn(); navBack();
   }
@@ -1900,6 +2239,9 @@ function frame(now) {
       G.popups = G.popups.filter(p => (p.t -= dt) > 0);
       drawBattleTop(); drawBattleBottom();
     }
+  } else if (state === 'cashier') {
+    updateCashier(dt);
+    if (state === 'cashier') { drawCashTop(); drawCashBottom(); }
   } else if (state === 'title') drawTitle(tt);
   else if (state === 'modes') drawModes(tt);
   else if (state === 'initials') drawInitials();
@@ -1919,15 +2261,16 @@ function botXY(e) {
 botC.addEventListener('pointerdown', e => {
   e.preventDefault(); botC.setPointerCapture(e.pointerId);
   const [x, y] = botXY(e);
-  if ((state === 'drive' || state === 'battle') && inside(x, y, MENU_BTN)) { openMenu(); return; }
+  if ((state === 'drive' || state === 'battle' || state === 'cashier') && inside(x, y, MENU_BTN)) { openMenu(); return; }
+  if (state === 'cashier' && cashPointer('down', x, y)) return;
   if (state === 'battle') return battlePointer('down', x, y);
   if (state === 'drive' && G.help && G.help.btns && !G.help.result) {
     const k = G.help.btns.findIndex(b => inside(x, y, b.r)); if (k >= 0) { NAV.i = k; answerHelp(G.help.btns[k].a); } return;
   }
-  const bi = BTN.findIndex(b => inside(x, y, b.r)), b = BTN[bi]; if (b && state === 'initials') NAV.ini = bi < 9 ? Math.floor(bi / 3) : bi === BTN.length - 1 ? 3 : NAV.ini; else if (b) NAV.i = bi; if (b && ['title', 'modes', 'chars', 'results', 'initials', 'board', 'menu'].includes(state)) { if (state !== 'initials') beep(660, 0.06); b.f(); }
+  const bi = BTN.findIndex(b => inside(x, y, b.r)), b = BTN[bi]; if (b && state === 'initials') NAV.ini = bi < 9 ? Math.floor(bi / 3) : bi === BTN.length - 1 ? 3 : NAV.ini; else if (b) NAV.i = bi; if (b && ['title', 'modes', 'chars', 'results', 'initials', 'board', 'menu', 'cashier'].includes(state)) { if (state !== 'initials') beep(660, 0.06); b.f(); }
 });
 botC.addEventListener('pointermove', e => { if (state === 'battle') { const [x, y] = botXY(e); battlePointer('move', x, y); } });
-botC.addEventListener('pointerup', e => { if (state === 'battle') { const [x, y] = botXY(e); battlePointer('up', x, y); } });
+botC.addEventListener('pointerup', e => { const [x, y] = botXY(e); if (state === 'battle') battlePointer('up', x, y); else if (state === 'cashier') cashPointer('up', x, y); });
 botC.addEventListener('pointercancel', () => { if (G && G.battle) G.battle.drag = null; });
 
 function bindBtn(id, key) {
