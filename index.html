@@ -1306,7 +1306,6 @@ function drawTitle(t) {
   BTN.push({ r: play, f: () => { INI = (store('initials') || 'AAA').split(''); INI_NEXT = 'modes'; state = 'initials'; } });
   BTN.push({ r: ch, f: () => { state = 'chars'; G_sel = charIdx; } });
   BTN.push({ r: sc, f: () => openBoard('title') });
-  textAC(B, 'Shared floors: everyone on a mode works the same store', 128, 176, LINE);
 }
 const MODE_ROWS = { zamboni: ['ZAMBONI', "2 minutes 'til open", '#ec7020'], newhire: ['NEW HIRE', 'Wrong spots are blocked. 1 pallet', GOOD],
   easy: ['EASY', 'No blocking, audit at the end. 2 pallets', '#3c78d2'], medium: ['MEDIUM', 'Easy + carts in the aisles. 3 pallets', HI],
@@ -1437,7 +1436,7 @@ function drawInitials() {
     panel(B, up[0], up[1], up[2], up[3], UI); textC(B, '+', x + 22, 28, PAPER);
     panel(B, box[0], box[1], box[2], box[3], '#3a3e4a'); textC(B, INI[i], x + 22, 56, HI, 5);
     panel(B, dn[0], dn[1], dn[2], dn[3], UI); textC(B, '-', x + 22, 112, PAPER);
-    BTN.push({ r: up, f: () => cycle(i, -1) }, { r: box, f: () => cycle(i, 1) }, { r: dn, f: () => cycle(i, 1) });
+    BTN.push({ r: up, f: () => cycle(i, 1) }, { r: box, f: () => cycle(i, 1) }, { r: dn, f: () => cycle(i, -1) });
   }
   textAC(B, 'Stick or tap +/- to change. A for next letter.', 128, 136, MUTE);
   const back = [12, 150, 116, 184], ok = [140, 150, 244, 184];
