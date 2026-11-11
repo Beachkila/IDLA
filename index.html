@@ -71,30 +71,29 @@ const T = topC.getContext('2d'), B = botC.getContext('2d');
 T.imageSmoothingEnabled = false; B.imageSmoothingEnabled = false;
 const SW = 256, SH = 192;
 
-// ---------- 3x5 pixel font ----------
-const GL = {
-  A:'010101111101101',B:'110101110101110',C:'011100100100011',D:'110101101101110',E:'111100110100111',
-  F:'111100110100100',G:'011100101101011',H:'101101111101101',I:'111010010010111',J:'001001001101010',
-  K:'101101110101101',L:'100100100100111',M:'101111111101101',N:'110101101101101',O:'010101101101010',
-  P:'110101110100100',Q:'010101101110011',R:'110101110101101',S:'011100010001110',T:'111010010010010',
-  U:'101101101101111',V:'101101101101010',W:'101101111111101',X:'101101010101101',Y:'101101010010010',
-  Z:'111001010100111','0':'111101101101111','1':'010110010010111','2':'110001010100111','3':'110001010001110',
-  '4':'101101111001001','5':'111100110001110','6':'011100111101111','7':'111001010010010','8':'111101111101111',
-  '9':'111101111001110','-':'000000111000000','+':'000010111010000','.':'000000000000010',':':'000010000010000',
-  '/':'001001010100100','%':'101001010100101','!':'010010010000010','?':'110001010000010','&':'010101010101011',
-  '>':'100010001010100','<':'001010100010001','(':'010100100100010',')':'010001001001010',"'":'010010000000000',
-  '*':'000101010101000',',':'000000000010100'
-};
-function text(ctx, s, x, y, col, sc = 1) {
-  s = String(s).toUpperCase(); ctx.fillStyle = col; let cx = x;
+// ---------- pixel fonts: C = Press Start 2P (main), A = Tiny5 (descriptions); both SIL OFL ----------
+const FONTC = {" ":[8,[]],"!":[8,[0,0,0,28,28,28,12,12,0,12,0,0,0,0]],"\"":[8,[0,0,0,54,54,54,0,0,0,0,0,0,0,0]],"#":[8,[0,0,0,54,127,54,54,54,127,54,0,0,0,0]],"$":[8,[0,0,0,8,62,11,62,104,63,8,0,0,0,0]],"%":[8,[0,0,0,70,37,19,8,100,82,49,0,0,0,0]],"&":[8,[0,0,0,14,27,27,14,91,51,126,0,0,0,0]],"'":[8,[0,0,0,12,12,12,0,0,0,0,0,0,0,0]],"(":[8,[0,0,0,48,24,12,12,12,24,48,0,0,0,0]],")":[8,[0,0,0,6,12,24,24,24,12,6,0,0,0,0]],"*":[8,[0,0,0,0,54,28,127,28,54,0,0,0,0,0]],"+":[8,[0,0,0,0,24,24,126,24,24,0,0,0,0,0]],",":[8,[0,0,0,0,0,0,0,0,12,12,6,0,0,0]],"-":[8,[0,0,0,0,0,0,126,0,0,0,0,0,0,0]],".":[8,[0,0,0,0,0,0,0,0,12,12,0,0,0,0]],"/":[8,[0,0,0,64,32,16,8,4,2,1,0,0,0,0]],"0":[8,[0,0,0,28,50,99,99,99,38,28,0,0,0,0]],"1":[8,[0,0,0,24,28,24,24,24,24,126,0,0,0,0]],"2":[8,[0,0,0,62,99,112,60,30,7,127,0,0,0,0]],"3":[8,[0,0,0,126,48,24,60,96,99,62,0,0,0,0]],"4":[8,[0,0,0,56,60,54,51,127,48,48,0,0,0,0]],"5":[8,[0,0,0,63,3,63,96,96,99,62,0,0,0,0]],"6":[8,[0,0,0,60,6,3,63,99,99,62,0,0,0,0]],"7":[8,[0,0,0,127,99,48,24,12,12,12,0,0,0,0]],"8":[8,[0,0,0,30,35,39,30,121,97,62,0,0,0,0]],"9":[8,[0,0,0,62,99,99,126,96,48,30,0,0,0,0]],":":[8,[0,0,0,0,12,12,0,12,12,0,0,0,0,0]],";":[8,[0,0,0,0,12,12,0,12,12,6,0,0,0,0]],"<":[8,[0,0,0,48,24,12,6,12,24,48,0,0,0,0]],"=":[8,[0,0,0,0,0,127,0,127,0,0,0,0,0,0]],">":[8,[0,0,0,6,12,24,48,24,12,6,0,0,0,0]],"?":[8,[0,0,0,62,127,99,48,28,0,28,0,0,0,0]],"@":[8,[0,0,0,62,65,93,85,125,1,62,0,0,0,0]],"A":[8,[0,0,0,28,54,99,99,127,99,99,0,0,0,0]],"B":[8,[0,0,0,63,99,99,63,99,99,63,0,0,0,0]],"C":[8,[0,0,0,60,102,3,3,3,102,60,0,0,0,0]],"D":[8,[0,0,0,31,51,99,99,99,51,31,0,0,0,0]],"E":[8,[0,0,0,127,3,3,63,3,3,127,0,0,0,0]],"F":[8,[0,0,0,127,3,3,63,3,3,3,0,0,0,0]],"G":[8,[0,0,0,124,6,3,115,99,102,124,0,0,0,0]],"H":[8,[0,0,0,99,99,99,127,99,99,99,0,0,0,0]],"I":[8,[0,0,0,126,24,24,24,24,24,126,0,0,0,0]],"J":[8,[0,0,0,96,96,96,96,96,99,62,0,0,0,0]],"K":[8,[0,0,0,99,51,27,15,31,59,115,0,0,0,0]],"L":[8,[0,0,0,6,6,6,6,6,6,126,0,0,0,0]],"M":[8,[0,0,0,99,119,127,107,107,99,99,0,0,0,0]],"N":[8,[0,0,0,99,103,111,123,115,99,99,0,0,0,0]],"O":[8,[0,0,0,62,99,99,99,99,99,62,0,0,0,0]],"P":[8,[0,0,0,63,99,99,99,63,3,3,0,0,0,0]],"Q":[8,[0,0,0,62,99,99,99,123,51,94,0,0,0,0]],"R":[8,[0,0,0,63,99,99,115,31,59,115,0,0,0,0]],"S":[8,[0,0,0,62,99,3,62,96,99,62,0,0,0,0]],"T":[8,[0,0,0,126,24,24,24,24,24,24,0,0,0,0]],"U":[8,[0,0,0,99,99,99,99,99,99,62,0,0,0,0]],"V":[8,[0,0,0,99,99,99,119,62,28,8,0,0,0,0]],"W":[8,[0,0,0,107,107,107,107,127,119,34,0,0,0,0]],"X":[8,[0,0,0,99,99,54,28,54,99,99,0,0,0,0]],"Y":[8,[0,0,0,102,102,102,60,24,24,24,0,0,0,0]],"Z":[8,[0,0,0,127,112,56,28,14,7,127,0,0,0,0]],"[":[8,[0,0,0,60,12,12,12,12,12,60,0,0,0,0]],"\\":[8,[0,0,0,1,2,4,8,16,32,64,0,0,0,0]],"]":[8,[0,0,0,30,24,24,24,24,24,30,0,0,0,0]],"^":[8,[0,0,0,28,54,0,0,0,0,0,0,0,0,0]],"_":[8,[0,0,0,0,0,0,0,0,0,0,127,0,0,0]],"`":[8,[0,0,0,8,16,0,0,0,0,0,0,0,0,0]],"a":[8,[0,0,0,0,0,62,96,126,99,126,0,0,0,0]],"b":[8,[0,0,0,3,3,63,99,99,99,62,0,0,0,0]],"c":[8,[0,0,0,0,0,126,3,3,3,126,0,0,0,0]],"d":[8,[0,0,0,96,96,126,99,99,99,126,0,0,0,0]],"e":[8,[0,0,0,0,0,62,99,127,3,62,0,0,0,0]],"f":[8,[0,0,0,112,24,126,24,24,24,24,0,0,0,0]],"g":[8,[0,0,0,0,0,126,99,99,126,96,62,0,0,0]],"h":[8,[0,0,0,3,3,63,99,99,99,99,0,0,0,0]],"i":[8,[0,0,0,24,0,28,24,24,24,126,0,0,0,0]],"j":[8,[0,0,0,48,0,56,48,48,48,48,30,0,0,0]],"k":[8,[0,0,0,3,3,99,51,31,51,99,0,0,0,0]],"l":[8,[0,0,0,28,24,24,24,24,24,126,0,0,0,0]],"m":[8,[0,0,0,0,0,63,109,109,109,109,0,0,0,0]],"n":[8,[0,0,0,0,0,63,99,99,99,99,0,0,0,0]],"o":[8,[0,0,0,0,0,62,99,99,99,62,0,0,0,0]],"p":[8,[0,0,0,0,0,63,99,99,63,3,3,0,0,0]],"q":[8,[0,0,0,0,0,126,99,99,126,96,96,0,0,0]],"r":[8,[0,0,0,0,0,118,14,6,6,6,0,0,0,0]],"s":[8,[0,0,0,0,0,62,3,62,96,63,0,0,0,0]],"t":[8,[0,0,0,24,24,126,24,24,24,24,0,0,0,0]],"u":[8,[0,0,0,0,0,99,99,99,99,126,0,0,0,0]],"v":[8,[0,0,0,0,0,102,102,102,60,24,0,0,0,0]],"w":[8,[0,0,0,0,0,107,107,107,107,54,0,0,0,0]],"x":[8,[0,0,0,0,0,99,54,28,54,99,0,0,0,0]],"y":[8,[0,0,0,0,0,99,99,99,126,96,62,0,0,0]],"z":[8,[0,0,0,0,0,127,56,28,14,127,0,0,0,0]],"{":[8,[0,0,0,48,24,24,12,24,24,48,0,0,0,0]],"|":[8,[0,0,0,24,24,24,24,24,24,24,0,0,0,0]],"}":[8,[0,0,0,6,12,12,24,12,12,6,0,0,0,0]],"~":[8,[0,0,0,0,0,14,93,56,0,0,0,0,0,0]]};
+const FONTA = {" ":[2,[]],"!":[2,[0,0,0,1,1,1,0,1,0,0,0,0]],"\"":[4,[0,0,0,5,5,0,0,0,0,0,0,0]],"#":[6,[0,0,0,10,31,10,31,10,0,0,0,0]],"$":[4,[0,0,0,2,6,3,4,3,2,0,0,0]],"%":[5,[0,0,0,9,4,2,9,0,0,0,0,0]],"&":[5,[0,0,0,2,5,2,5,10,0,0,0,0]],"'":[2,[0,0,0,1,1,0,0,0,0,0,0,0]],"(":[3,[0,0,0,2,1,1,1,2,0,0,0,0]],")":[3,[0,0,0,1,2,2,2,1,0,0,0,0]],"*":[4,[0,0,0,2,7,2,5,0,0,0,0,0]],"+":[4,[0,0,0,0,2,7,2,0,0,0,0,0]],",":[3,[0,0,0,0,0,0,0,2,1,0,0,0]],"-":[4,[0,0,0,0,0,7,0,0,0,0,0,0]],".":[2,[0,0,0,0,0,0,0,1,0,0,0,0]],"/":[3,[0,0,0,2,2,1,1,1,0,0,0,0]],"0":[4,[0,0,0,2,5,5,5,2,0,0,0,0]],"1":[4,[0,0,0,2,3,2,2,2,0,0,0,0]],"2":[4,[0,0,0,3,4,2,1,7,0,0,0,0]],"3":[4,[0,0,0,3,4,2,4,3,0,0,0,0]],"4":[4,[0,0,0,4,6,5,7,4,0,0,0,0]],"5":[4,[0,0,0,7,1,3,4,3,0,0,0,0]],"6":[4,[0,0,0,6,1,3,5,2,0,0,0,0]],"7":[4,[0,0,0,7,4,2,2,2,0,0,0,0]],"8":[4,[0,0,0,2,5,2,5,2,0,0,0,0]],"9":[4,[0,0,0,2,5,6,4,3,0,0,0,0]],":":[2,[0,0,0,0,1,0,0,1,0,0,0,0]],";":[3,[0,0,0,0,2,0,0,2,1,0,0,0]],"<":[4,[0,0,0,4,2,1,2,4,0,0,0,0]],"=":[4,[0,0,0,0,7,0,7,0,0,0,0,0]],">":[4,[0,0,0,1,2,4,2,1,0,0,0,0]],"?":[4,[0,0,0,3,4,2,0,2,0,0,0,0]],"@":[5,[0,0,0,6,9,13,1,6,0,0,0,0]],"A":[5,[0,0,0,6,9,15,9,9,0,0,0,0]],"B":[5,[0,0,0,7,9,7,9,7,0,0,0,0]],"C":[5,[0,0,0,6,9,1,9,6,0,0,0,0]],"D":[5,[0,0,0,7,9,9,9,7,0,0,0,0]],"E":[5,[0,0,0,15,1,7,1,15,0,0,0,0]],"F":[5,[0,0,0,15,1,7,1,1,0,0,0,0]],"G":[5,[0,0,0,14,1,13,9,14,0,0,0,0]],"H":[5,[0,0,0,9,9,15,9,9,0,0,0,0]],"I":[2,[0,0,0,1,1,1,1,1,0,0,0,0]],"J":[4,[0,0,0,4,4,4,5,2,0,0,0,0]],"K":[5,[0,0,0,9,5,3,5,9,0,0,0,0]],"L":[4,[0,0,0,1,1,1,1,7,0,0,0,0]],"M":[6,[0,0,0,17,27,21,17,17,0,0,0,0]],"N":[5,[0,0,0,9,11,13,9,9,0,0,0,0]],"O":[5,[0,0,0,6,9,9,9,6,0,0,0,0]],"P":[5,[0,0,0,7,9,7,1,1,0,0,0,0]],"Q":[5,[0,0,0,6,9,9,5,10,0,0,0,0]],"R":[5,[0,0,0,7,9,7,9,9,0,0,0,0]],"S":[5,[0,0,0,14,1,6,8,7,0,0,0,0]],"T":[4,[0,0,0,7,2,2,2,2,0,0,0,0]],"U":[5,[0,0,0,9,9,9,9,6,0,0,0,0]],"V":[4,[0,0,0,5,5,5,2,2,0,0,0,0]],"W":[6,[0,0,0,21,21,21,10,10,0,0,0,0]],"X":[4,[0,0,0,5,5,2,5,5,0,0,0,0]],"Y":[4,[0,0,0,5,5,2,2,2,0,0,0,0]],"Z":[4,[0,0,0,7,4,2,1,7,0,0,0,0]],"[":[3,[0,0,0,3,1,1,1,3,0,0,0,0]],"\\":[3,[0,0,0,1,1,2,2,2,0,0,0,0]],"]":[3,[0,0,0,3,2,2,2,3,0,0,0,0]],"^":[4,[0,0,0,2,5,0,0,0,0,0,0,0]],"_":[4,[0,0,0,0,0,0,0,7,0,0,0,0]],"`":[3,[0,0,0,1,2,0,0,0,0,0,0,0]],"a":[4,[0,0,0,0,6,5,5,6,0,0,0,0]],"b":[4,[0,0,0,1,3,5,5,3,0,0,0,0]],"c":[4,[0,0,0,0,6,1,1,6,0,0,0,0]],"d":[4,[0,0,0,4,6,5,5,6,0,0,0,0]],"e":[4,[0,0,0,0,2,7,1,6,0,0,0,0]],"f":[3,[0,0,0,2,1,3,1,1,0,0,0,0]],"g":[4,[0,0,0,0,6,5,5,6,3,0,0,0]],"h":[4,[0,0,0,1,3,5,5,5,0,0,0,0]],"i":[2,[0,0,1,0,1,1,1,1,0,0,0,0]],"j":[2,[0,0,1,0,1,1,1,1,1,0,0,0]],"k":[4,[0,0,0,1,5,3,5,5,0,0,0,0]],"l":[2,[0,0,0,1,1,1,1,1,0,0,0,0]],"m":[6,[0,0,0,0,15,21,21,21,0,0,0,0]],"n":[4,[0,0,0,0,3,5,5,5,0,0,0,0]],"o":[4,[0,0,0,0,2,5,5,2,0,0,0,0]],"p":[4,[0,0,0,0,3,5,5,3,1,0,0,0]],"q":[4,[0,0,0,0,6,5,5,6,4,0,0,0]],"r":[3,[0,0,0,0,3,1,1,1,0,0,0,0]],"s":[4,[0,0,0,0,6,3,4,3,0,0,0,0]],"t":[3,[0,0,0,1,3,1,1,2,0,0,0,0]],"u":[4,[0,0,0,0,5,5,5,6,0,0,0,0]],"v":[4,[0,0,0,0,5,5,2,2,0,0,0,0]],"w":[6,[0,0,0,0,21,21,10,10,0,0,0,0]],"x":[4,[0,0,0,0,5,2,2,5,0,0,0,0]],"y":[4,[0,0,0,0,5,5,5,2,1,0,0,0]],"z":[4,[0,0,0,0,7,2,1,7,0,0,0,0]],"{":[4,[0,0,0,6,2,1,2,6,0,0,0,0]],"|":[2,[0,0,0,1,1,1,1,1,0,0,0,0]],"}":[4,[0,0,0,3,2,4,2,3,0,0,0,0]],"~":[3,[0,0,0,0,0,3,0,0,0,0,0,0]]};
+// rows start 3 px above the cap top; y passed to text() is the cap top
+function text(ctx, s, x, y, col, sc = 1, f = 'C') {
+  const G = f === 'A' ? FONTA : FONTC; s = String(s); if (f !== 'A') s = s.toUpperCase();
+  ctx.fillStyle = col; let cx = x;
   for (const ch of s) {
-    const g = GL[ch];
-    if (g) for (let i = 0; i < 15; i++) if (g[i] === '1') ctx.fillRect(cx + (i % 3) * sc, y + ((i / 3) | 0) * sc, sc, sc);
-    cx += 4 * sc;
+    const g = G[ch] || G['?'];
+    const rows = g[1];
+    for (let i = 0; i < rows.length; i++) { let r = rows[i], b = 0; while (r) { if (r & 1) ctx.fillRect(cx + b * sc, y + (i - 3) * sc, sc, sc); r >>= 1; b++; } }
+    cx += g[0] * sc;
   }
 }
-const tw = (s, sc = 1) => String(s).length * 4 * sc - sc;
-function textC(ctx, s, cx, y, col, sc = 1) { text(ctx, s, Math.round(cx - tw(s, sc) / 2), y, col, sc); }
+function tw(s, sc = 1, f = 'C') {
+  const G = f === 'A' ? FONTA : FONTC; s = String(s); if (f !== 'A') s = s.toUpperCase();
+  let w = 0; for (const ch of s) w += (G[ch] || G['?'])[0]; return Math.max(0, w - 1) * sc;
+}
+function textC(ctx, s, cx, y, col, sc = 1, f = 'C') { text(ctx, s, Math.round(cx - tw(s, sc, f) / 2), y, col, sc, f); }
+const textA = (ctx, s, x, y, col) => text(ctx, s, x, y, col, 1, 'A');
+const textAC = (ctx, s, cx, y, col) => textC(ctx, s, cx, y, col, 1, 'A');
+// fit: C if it fits in w px, else A
+function textFit(ctx, s, x, y, col, w) { if (tw(s) <= w) text(ctx, s, x, y, col); else textA(ctx, s, x, y, col); }
 
 // ---------- palette ----------
 const INK = '#18161e', PAPER = '#f6f4ec', UI = '#2c303c', UI2 = '#1e2028', LINE = '#5a6070', HI = '#f0c440',
@@ -260,15 +259,14 @@ const STAGE = [55, 79, 73, 89];  // pallet pickup at the warehouse door
 const LANES_X = [11, 45, 107], LANES_Y = [12, 30, 47, 65, 83];
 
 const MODES = {
-  newhire: { name:'NEW HIRE', block:true,  hint:true,  carts:0, help:false },
-  easy:    { name:'EASY',     block:false, hint:false, carts:0, help:false },
-  medium:  { name:'MEDIUM',   block:false, hint:false, carts:3, help:false },
-  hard:    { name:'HARD',     block:false, hint:false, carts:4, help:true },
-  daily:   { name:'DAILY SHIFT', block:false, hint:false, carts:3, help:false, daily:true },
+  newhire: { name:'NEW HIRE', block:true,  hint:true,  carts:0, help:false, pallets:1 },
+  easy:    { name:'EASY',     block:false, hint:false, carts:0, help:false, pallets:2 },
+  medium:  { name:'MEDIUM',   block:false, hint:false, carts:3, help:false, pallets:3 },
+  hard:    { name:'HARD',     block:false, hint:false, carts:4, help:true, pallets:4 },
+  daily:   { name:'DAILY SHIFT', block:false, hint:false, carts:3, help:false, daily:true, pallets:4 },
   zamboni: { name:'ZAMBONI', block:false, hint:false, carts:0, help:false, zamboni:true },
 };
-const PALLETS_PER_SHIFT = 4;
-const MODE_KEYS = ['newhire', 'easy', 'medium', 'hard', 'daily', 'zamboni'];
+const MODE_KEYS = ['zamboni', 'newhire', 'easy', 'medium', 'hard', 'daily'];
 const MODE_SHORT = { newhire:'NEW', easy:'EASY', medium:'MED', hard:'HARD', daily:'DAILY', zamboni:'ZAMB' };
 
 // ---------- helpers ----------
@@ -505,7 +503,7 @@ function newShift(k) {
   const day = todayUTC();
   G = {
     rng: mode.daily ? seeded(parseInt(day.replace(/-/g, ''), 10) * 2654435761) : Math.random, day,
-    clock: 0, score: 0, palletNo: 1, pallets: PALLETS_PER_SHIFT, combo: 0, bestCombo: 0,
+    clock: 0, score: 0, palletNo: 1, pallets: mode.pallets || 4, combo: 0, bestCombo: 0,
     placed: 0, correct: 0, auditErrors: 0, blocked: 0, bumps: 0, scrapes: 0, helpOk: 0, helpBad: 0,
     truck: { x: 64.5, y: 83, h: Math.PI, delta: 0, loaded: true, frame: 0, anim: 0, stun: 0, pulling: true, scrapeCd: 0 },
     task: null, toast: null, toastT: 0, popups: [], carts: [], helpT: rnd(18, 30), help: null, battle: null, honk: 0,
@@ -981,9 +979,9 @@ function bar(ctx, x, y, w, frac, col) {
 const fmtClock = s => ((s / 60) | 0) + ':' + pad2((s % 60) | 0);
 function header(ctx) {
   ctx.fillStyle = UI2; ctx.fillRect(0, 0, SW, 13);
-  text(ctx, 'IDLA', 4, 4, HI); text(ctx, 'SHIFT  ' + mode.name, 26, 4, PAPER);
-  text(ctx, 'PLT ' + G.palletNo + '/' + G.pallets, 150, 4, PAPER);
-  text(ctx, fmtClock(G.clock), 230, 4, HI);
+  text(ctx, 'IDLA', 4, 3, HI); textFit(ctx, mode.name, 42, 3, PAPER, 96);
+  const p = 'PLT ' + G.palletNo + '/' + G.pallets; text(ctx, p, 204 - tw(p), 3, PAPER);
+  const c = fmtClock(G.clock); text(ctx, c, 252 - tw(c), 3, HI);
 }
 
 function drawTruck(ctx, t, sx, sy, ch = charIdx) {
@@ -1030,24 +1028,25 @@ function drawDriveTop() {
   // task panel
   panel(T, 203, 16, 254, 171);
   let y = 21;
-  const L = (s, c = PAPER) => { text(T, s, 207, y, c); y += 9; };
-  L('TASK', HI);
-  if (G.truck.loaded && !G.task) { L('WAITING', PAPER); L('FOR', PAPER); L('PALLET', HI); }
+  const K = s => { textA(T, s, 207, y, MUTE); y += 8; };            // small label
+  const L = (s, c = PAPER) => { s = String(s); if (tw(s) <= 45) { text(T, s, 207, y, c); y += 10; } else { textA(T, s, 207, y, c); y += 8; } };
+  K('Task');
+  if (G.truck.loaded && !G.task) { L('WAIT', PAPER); K('for pallet'); }
   else if (G.truck.loaded) {
     const n = ANAME[G.task.face.a].split(/[ +]/);
     for (const w of n) L(w, AC[G.task.face.a] === '#ebebe1' ? PAPER : AC[G.task.face.a]);
     L(pad2(G.task.tags[0]) + '-' + pad2(G.task.tags[1]), HI);
-  } else { L('RETURN', PAPER); L('TO', PAPER); L('PICKUP', HI); }
-  y += 4; L('SCORE'); L(G.score, HI);
-  L('COMBO'); L('X' + G.combo, GOOD);
-  L('CLIPS'); L(G.scrapes, G.scrapes ? BAD : GOOD);
-  if (NET.state === 'on') { L('FLOOR ' + NET.floor.split('-')[1], MUTE); L((OTHERS.length + 1) + ' HERE', '#8cb8f0'); }
-  else if (FLOOR_API) { L(NET.state === 'connecting' ? 'JOINING' : 'SOLO', MUTE); }
-  if (mode.carts) { L('BUMPS'); L(G.bumps, G.bumps ? BAD : GOOD); }
+  } else { L('BACK', PAPER); K('to pickup'); }
+  y += 4; K('Score'); L(G.score, HI);
+  K('Combo'); L('X' + G.combo, GOOD);
+  K('Clips'); L(G.scrapes, G.scrapes ? BAD : GOOD);
+  if (mode.carts) { K('Bumps'); L(G.bumps, G.bumps ? BAD : GOOD); }
+  if (NET.state === 'on') { y += 2; K('Floor ' + NET.floor.split('-')[1]); textA(T, (OTHERS.length + 1) + ' here', 207, y, '#8cb8f0'); y += 8; }
+  else if (FLOOR_API) { y += 2; K(NET.state === 'connecting' ? 'Joining...' : 'Solo'); }
   // message line
   T.fillStyle = UI; T.fillRect(0, 173, 202, 19);
   const msg = G.toastT > 0 ? G.toast : (G.truck.loaded ? (G.task ? 'DRIVE TO ' + tagStr(G.task) : 'GETTING YOUR PALLET...') : 'RETURN TO PALLET PICKUP');
-  text(T, msg, 6, 180, G.toastT > 0 ? HI : PAPER);
+  textFit(T, msg, 5, 179, G.toastT > 0 ? HI : PAPER, 194);
 }
 
 function drawDriveBottom() {
@@ -1087,9 +1086,9 @@ function drawDriveBottom() {
     B.globalAlpha = 1;
     drawTruck(B, o, Math.round(ocx), Math.round(ocy), o.char);
     const lx = Math.round(ocx), ly = Math.round(ocy) - (Math.abs(Math.sin(o.h)) > 0.7 ? 48 : 26);
-    if (SHOW_INI) { panel(B, lx - 9, ly - 3, lx + 10, ly + 7, UI2); textC(B, o.ini, lx + 1, ly, o.char === 1 ? '#8cb8f0' : '#f0c890'); }
-    if (o.unloading) { panel(B, lx - 20, ly + 9, lx + 21, ly + 18, UI2); textC(B, 'UNLOADING', lx + 1, ly + 11, MUTE); }
-    if (o.honk > 0) { panel(B, lx - 22, ly - 15, lx + 22, ly - 5, UI2); textC(B, 'BEEP BEEP', lx, ly - 12, HI); }
+    if (SHOW_INI) { panel(B, lx - 14, ly - 4, lx + 15, ly + 8, UI2); textC(B, o.ini, lx + 1, ly, o.char === 1 ? '#8cb8f0' : '#f0c890'); }
+    if (o.unloading) { panel(B, lx - 20, ly + 9, lx + 21, ly + 18, UI2); textAC(B, 'Unloading', lx + 1, ly + 11, MUTE); }
+    if (o.honk > 0) { panel(B, lx - 22, ly - 17, lx + 22, ly - 7, UI2); textAC(B, 'Beep beep!', lx, ly - 14, HI); }
   }
   B.globalAlpha = .22; B.fillStyle = INK;
   for (const p of PARTS) {
@@ -1105,7 +1104,7 @@ function drawDriveBottom() {
   }
   if (G.honk > 0) {
     const hx = tcx * PX - cx, hy = tcy * PX - cy - 50;
-    panel(B, hx - 22, hy - 4, hx + 22, hy + 8, UI2); textC(B, 'BEEP BEEP', hx, hy, HI);
+    panel(B, hx - 22, hy - 4, hx + 22, hy + 7, UI2); textAC(B, 'Beep beep!', hx, hy + 1, HI);
   }
   // off-screen arrow toward target
   const zx = z ? (z[0] + z[2]) / 2 * PX - cx : vw / 2, zy = z ? (z[1] + z[3]) / 2 * PX - cy : vh / 2;
@@ -1123,13 +1122,13 @@ function drawDriveBottom() {
     textC(B, 'PRESS A TO ' + G.canAct, 128, 176, HI);
   } else if (G.hint) {
     panel(B, 40, 168, 216, 189, UI2);
-    textC(B, G.hint, 128, 176, PAPER);
+    if (tw(G.hint) <= 240) textC(B, G.hint, 128, 176, PAPER); else textAC(B, G.hint, 128, 177, PAPER);
   }
   if (mode.zamboni) {
     const sp = ZSPEEDS[G.zam.speed];
     panel(B, 4, 166, 98, 189, UI2);
-    text(B, 'A: SPEED', 9, 170, MUTE); text(B, sp.name, 9, 179, [GOOD, HI, BAD][G.zam.speed]);
-    for (let i = 0; i < 3; i++) { B.fillStyle = i <= G.zam.speed ? [GOOD, HI, BAD][G.zam.speed] : LINE; B.fillRect(66 + i * 9, 179 - i * 2, 7, 5 + i * 2); }
+    textA(B, 'A: speed', 9, 169, MUTE); text(B, sp.name, 9, 178, [GOOD, HI, BAD][G.zam.speed]);
+    for (let i = 0; i < 3; i++) { B.fillStyle = i <= G.zam.speed ? [GOOD, HI, BAD][G.zam.speed] : LINE; B.fillRect(70 + i * 9, 179 - i * 2, 7, 5 + i * 2); }
   }
   drawMenuButton();
   if (G.help) drawHelp();
@@ -1139,11 +1138,11 @@ function drawHelp() {
   const h = G.help;
   panel(B, 10, 30, 245, 160, UI2);
   B.drawImage(IMG[h.cart.skin], 18, 40, 28, 52);
-  text(B, 'EXCUSE ME!', 54, 42, HI);
-  text(B, 'WHERE CAN I FIND', 54, 54, PAPER);
-  text(B, h.product + '?', 54, 66, HI, 2);
+  textA(B, 'Excuse me!', 54, 42, HI);
+  textA(B, 'Where can I find', 54, 54, PAPER);
+  const q = h.product + '?'; if (tw(q, 2) <= 186) text(B, q, 54, 66, HI, 2); else text(B, q, 54, 70, HI);
   if (h.result) {
-    textC(B, h.result, 128, 120, h.result.includes('+') ? GOOD : BAD);
+    textC(B, h.result, 128, 116, h.result.includes('+') ? GOOD : BAD);
     return;
   }
   h.btns = h.opts.map((a, i) => ({ a, r: [18 + i * 76, 100, 18 + i * 76 + 70, 132] }));
@@ -1151,10 +1150,10 @@ function drawHelp() {
     panel(B, b.r[0], b.r[1], b.r[2], b.r[3], UI);
     B.fillStyle = AC[b.a]; B.fillRect(b.r[0] + 3, b.r[1] + 3, b.r[2] - b.r[0] - 5, 3);
     const words = ANAME[b.a].split(/[ +]/);
-    words.forEach((w, i) => textC(B, w, (b.r[0] + b.r[2]) / 2, b.r[1] + 11 + i * 8, PAPER));
+    words.forEach((w, i) => { const cx = (b.r[0] + b.r[2]) / 2 + 1, y = b.r[1] + (words.length > 1 ? 11 : 15) + i * 10; if (tw(w) <= 64) textC(B, w, cx, y, PAPER); else textAC(B, w, cx, y, PAPER); });
   }
   bar(B, 18, 142, 218, h.t / 10, HI);
-  text(B, 'TAP AN AREA', 18, 151, MUTE);
+  textA(B, 'Tap an area, or use the stick and A', 18, 151, MUTE);
 }
 
 // ---------- battle drawing ----------
@@ -1165,7 +1164,7 @@ function caseIcon(ctx, x, y, w, h, c, ghost = 0, wrong = false) {
     for (let i = x; i < x + w; i += 2) { ctx.fillRect(i, y, 1, 1); ctx.fillRect(i, y + h, 1, 1); }
     for (let j = y; j < y + h; j += 2) { ctx.fillRect(x, j, 1, 1); ctx.fillRect(x + w, j, 1, 1); }
     ctx.globalAlpha = ghost === 2 ? 0.75 : 0.4; ctx.drawImage(ic, ix, iy); ctx.globalAlpha = 1;
-    textC(ctx, c.n, x + w / 2 + 1, y + h - 6, ghost === 2 ? '#e4e8ee' : '#6a7078');
+    textC(ctx, c.n, x + w / 2 + 1, y + h - 6, ghost === 2 ? '#e4e8ee' : '#6a7078', 1, 'A');
     return;
   }
   ctx.fillStyle = INK; ctx.fillRect(x, y, w + 1, h + 1);
@@ -1174,7 +1173,7 @@ function caseIcon(ctx, x, y, w, h, c, ghost = 0, wrong = false) {
   ctx.fillStyle = '#8c643c'; ctx.fillRect(x + 1, y + h - 1, w - 1, 1); ctx.fillRect(x + w - 1, y + 1, 1, h - 1);
   ctx.fillStyle = '#f4ecdc'; ctx.fillRect(ix, iy + 1, 16, 15);
   ctx.drawImage(ic, ix, iy + 1);
-  textC(ctx, c.n, x + w / 2, y + h - 6, INK);
+  textC(ctx, c.n, x + w / 2 + 1, y + h - 6, INK, 1, 'A');
   if (wrong && state === 'results') { ctx.strokeStyle = BAD; ctx.strokeRect(x + .5, y + .5, w, h); }
 }
 function drawBattleTop() {
@@ -1192,7 +1191,7 @@ function drawBattleTop() {
   }
   T.fillStyle = AC[a]; T.fillRect(0, 112, SW, 6);
   T.fillStyle = '#fafaf4'; T.fillRect(0, 118, SW, 7); T.fillStyle = INK; T.fillRect(0, 125, SW, 1);
-  for (let i = 0; i < 3; i++) textC(T, a + '-' + pad2(G.task.tags[0] + i), 43 + i * 85, 119, BAD);
+  for (let i = 0; i < 3; i++) textC(T, a + '-' + pad2(G.task.tags[0] + i), 43 + i * 85, 118, BAD);
   T.fillStyle = '#c4c8c2'; T.fillRect(0, 126, SW, 66);
   // pallet as the opponent; the stack shrinks as cases come off
   const frac = b.queue.length / b.total, h = Math.round(23 * frac), sc = 4;
@@ -1206,19 +1205,18 @@ function drawBattleTop() {
   for (let i = 1; i <= 3; i++) if (b.queue[i]) caseIcon(T, 9 + (i - 1) * 34, 30, 30, 26, b.queue[i]);
   // status panel
   panel(T, 4, 130, 124, 189);
-  text(T, ANAME[a], 9, 135, AC[a] === '#ebebe1' ? PAPER : AC[a]);
-  text(T, pad2(G.task.tags[0]) + '-' + pad2(G.task.tags[1]), 92, 135, HI);
-  text(T, 'CASES', 9, 147, PAPER); bar(T, 40, 146, 78, frac, BAD);
-  text(T, b.queue.length + '/' + b.total, 9, 156, MUTE);
-  text(T, 'SCORE ' + G.score, 50, 156, PAPER);
-  text(T, 'COMBO X' + G.combo, 9, 172, G.combo >= 3 ? HI : PAPER, 2);
+  textFit(T, ANAME[a], 9, 135, AC[a] === '#ebebe1' ? PAPER : AC[a], 70);
+  const tg = pad2(G.task.tags[0]) + '-' + pad2(G.task.tags[1]); textA(T, tg, 119 - tw(tg, 1, 'A'), 135, HI);
+  textA(T, 'Cases ' + b.queue.length + '/' + b.total, 9, 147, MUTE); bar(T, 62, 146, 56, frac, BAD);
+  textA(T, 'Score', 9, 158, MUTE); const sv = String(G.score); text(T, sv, 119 - tw(sv), 158, PAPER);
+  textA(T, 'Combo', 9, 174, MUTE); text(T, 'X' + G.combo, 40, 170, G.combo >= 3 ? HI : PAPER, 2);
   // popups
   let py2 = 108;
   for (const p of G.popups.slice(-3)) {
     const al = Math.min(1, p.t * 2);
     T.globalAlpha = al;
     panel(T, 22, py2 - 4, 112, py2 + 10, UI2);
-    textC(T, p.s, 67, py2, p.s === 'PLACED' ? PAPER : HI);
+    if (tw(p.s) <= 86) textC(T, p.s, 68, py2, p.s === 'PLACED' ? PAPER : HI); else textAC(T, p.s, 67, py2 + 1, p.s === 'PLACED' ? PAPER : HI);
     T.globalAlpha = 1; py2 -= 18;
   }
 }
@@ -1226,7 +1224,8 @@ function drawBattleTop() {
 function drawBattleBottom() {
   const b = G.battle, a = G.task.face.a;
   B.fillStyle = '#2c303c'; B.fillRect(0, 0, SW, SH);
-  text(B, ANAME[a] + '  ' + a + '-' + pad2(G.task.tags[0]) + ' / ' + pad2(G.task.tags[0] + 1) + ' / ' + pad2(G.task.tags[1]), 6, 4, PAPER);
+  text(B, ANAME[a], 6, 4, PAPER);
+  textA(B, a + '-' + pad2(G.task.tags[0]) + ' / ' + pad2(G.task.tags[0] + 1) + ' / ' + pad2(G.task.tags[1]), 12 + tw(ANAME[a]), 5, MUTE);
   drawMenuButton();
   const cur = b.queue[0];
   for (let sec = 0; sec < 3; sec++) {
@@ -1256,15 +1255,15 @@ function drawBattleBottom() {
       const bob = Math.sin(G.clock * 6) > 0 ? 0 : 1;
       caseIcon(B, 6, 165 + bob, SLOT_W, SLOT_H - 2, cur);
     }
-    text(B, 'DRAG THE CASE', 48, 168, HI);
-    text(B, 'ONTO ITS SPOT', 48, 176, HI);
-    text(B, mode.block ? 'WRONG SPOTS BLOCKED' : 'NO BLOCKING - AUDIT', 116, 168, MUTE);
-    text(B, mode.block ? 'MATCHES GLOW GREEN' : 'AT END OF SHIFT', 116, 176, MUTE);
+    textA(B, 'Drag the case', 48, 168, HI);
+    textA(B, 'onto its spot', 48, 177, HI);
+    textA(B, mode.block ? 'Wrong spots are blocked' : 'No blocking: audit', 124, 168, MUTE);
+    textA(B, mode.block ? 'Matches glow green' : 'at the end of the shift', 124, 177, MUTE);
   } else textC(B, 'PALLET EMPTY!', 128, 172, GOOD, 2);
   if (b.drag && cur) {
     B.globalAlpha = .9; caseIcon(B, b.drag.x - b.drag.ox, b.drag.y - b.drag.oy, SLOT_W, SLOT_H, cur); B.globalAlpha = 1;
   }
-  if (b.flashT > 0) { panel(B, 60, 70, 196, 92, UI2); textC(B, b.flash, 128, 78, BAD); }
+  if (b.flashT > 0) { panel(B, 40, 70, 216, 92, UI2); if (tw(b.flash) <= 170) textC(B, b.flash, 129, 78, BAD); else textAC(B, b.flash, 128, 79, BAD); }
 }
 
 // ---------- title & results ----------
@@ -1277,18 +1276,18 @@ function drawTitleTop(t) {
   T.fillStyle = '#c4c8c2'; T.fillRect(0, 143, SW, 49);
   for (let x = 0; x < SW; x += 16) { T.fillStyle = '#b4b8b2'; T.fillRect(x, 143, 1, 49); }
   T.fillStyle = INK; T.fillRect(60, 10, 136, 46); T.fillStyle = UI2; T.fillRect(62, 12, 132, 42);
-  text(T, 'IDLA', 79, 18, INK, 6); text(T, 'IDLA', 77, 16, HI, 6);
+  textC(T, 'IDLA', 130, 20, INK, 4); textC(T, 'IDLA', 128, 18, HI, 4);
   textC(T, 'SHELF STOCKER', 128, 60, INK);
   const bx = ((t * 30) % (SW + 140)) - 120;
   T.drawImage(IMG[CHARS[charIdx].pre + 'side'], bx, 100, 120, 64);
-  textC(T, 'STICK WALK   A ACT   B HORN', 128, 178, INK);
+  textC(T, 'STICK WALK  A ACT  B HORN', 128, 176, INK);
 }
 function bigButton(r, label, sub, col) {
   panel(B, r[0], r[1], r[2], r[3], UI);
   B.fillStyle = col; B.fillRect(r[0] + 3, r[1] + 3, 4, r[3] - r[1] - 5);
-  const h = r[3] - r[1], tight = h < 32, tiny = h < 26;
-  text(B, label, r[0] + 10, r[1] + (tiny ? 3 : tight ? 5 : 8), PAPER, 2);
-  if (sub) text(B, sub, r[0] + 10, r[1] + (tiny ? 15 : tight ? 18 : 23), MUTE);
+  const h = r[3] - r[1], big = h >= 30;
+  if (big) { text(B, label, r[0] + 12, r[1] + 6, PAPER, 2); if (sub) textA(B, sub, r[0] + 12, r[1] + 24, MUTE); }
+  else { text(B, label, r[0] + 12, r[1] + 4, PAPER); if (sub) textA(B, sub, r[0] + 12, r[1] + 14, MUTE); }
 }
 function drawTitle(t) {
   drawTitleTop(t);
@@ -1296,35 +1295,51 @@ function drawTitle(t) {
   const c = CHARS[charIdx];
   BTN = [];
   const play = [12, 8, 244, 42], ch = [12, 48, 244, 120], sc = [12, 126, 244, 160];
-  bigButton(play, 'PLAY', 'CHOOSE A MODE AND START A SHIFT', GOOD);
+  bigButton(play, 'PLAY', 'Enter your initials, pick a mode, start a shift', GOOD);
   panel(B, ch[0], ch[1], ch[2], ch[3], UI);
   B.fillStyle = '#3c78d2'; B.fillRect(ch[0] + 3, ch[1] + 3, 4, ch[3] - ch[1] - 5);
-  text(B, 'CHARACTER', 22, 56, PAPER, 2);
-  text(B, 'NOW PLAYING AS', 22, 72, MUTE); text(B, c.name, 22, 81, HI);
-  text(B, 'TAP TO CHANGE', 22, 106, MUTE);
+  text(B, 'CHARACTER', 24, 56, PAPER, 2);
+  textA(B, 'Now playing as', 24, 76, MUTE); text(B, c.name, 24, 86, HI);
+  textA(B, 'Tap to change', 24, 106, MUTE);
   B.drawImage(IMG[c.por + ((t % 3.2) < 0.12 ? 'b' : 'a')], 204, 52, 34, 62);
-  bigButton(sc, 'SCORES', API ? 'LEADERBOARDS FOR EVERY MODE' : 'YOUR BESTS ON THIS PHONE', HI);
-  BTN.push({ r: play, f: () => { state = 'modes'; } });
+  bigButton(sc, 'SCORES', API ? 'Leaderboards for every mode' : 'Your bests on this phone', HI);
+  BTN.push({ r: play, f: () => { INI = (store('initials') || 'AAA').split(''); INI_NEXT = 'modes'; state = 'initials'; } });
   BTN.push({ r: ch, f: () => { state = 'chars'; G_sel = charIdx; } });
   BTN.push({ r: sc, f: () => openBoard('title') });
-  textC(B, '4 PALLETS PER SHIFT', 128, 176, LINE);
+  textAC(B, 'Shared floors: everyone on a mode works the same store', 128, 176, LINE);
+}
+const MODE_ROWS = { zamboni: ['ZAMBONI', "2 minutes 'til open", '#ec7020'], newhire: ['NEW HIRE', 'Wrong spots are blocked. 1 pallet', GOOD],
+  easy: ['EASY', 'No blocking, audit at the end. 2 pallets', '#3c78d2'], medium: ['MEDIUM', 'Easy + carts in the aisles. 3 pallets', HI],
+  hard: ['HARD', 'Medium + shoppers need help. 4 pallets', BAD], daily: ['DAILY SHIFT', 'Same pallets for everyone today. 4 pallets', '#965aaa'] };
+let COUNTS = null, COUNTS_T = 0;
+function pollCounts(dt) {
+  if (!FLOOR_API) return;
+  COUNTS_T -= dt; if (COUNTS_T > 0) return; COUNTS_T = 8;
+  fetch(FLOOR_API.replace(/^ws/, 'http') + '/counts').then(r => r.json()).then(j => { COUNTS = j; }).catch(() => {});
 }
 function drawModes(t) {
   drawTitleTop(t);
+  pollCounts(t - (drawModes.last || t) || 0.016); drawModes.last = t;
   B.fillStyle = UI2; B.fillRect(0, 0, SW, SH);
   textC(B, 'CHOOSE A MODE', 128, 5, HI);
-  const rows = [['newhire', 'NEW HIRE', 'WRONG SPOTS ARE BLOCKED'], ['easy', 'EASY', 'NO BLOCKING. AUDIT AT END'],
-    ['medium', 'MEDIUM', 'EASY + CARTS IN THE AISLES'], ['hard', 'HARD', 'MEDIUM + CUSTOMERS NEED HELP'],
-    ['daily', 'DAILY SHIFT', 'SAME PALLETS FOR EVERYONE TODAY'], ['zamboni', 'ZAMBONI', "2 MINUTES 'TIL OPEN"]];
   BTN = [];
-  rows.forEach(([k, n, d], i) => {
-    const y = 13 + i * 25, r = [12, y, 244, y + 23];
-    bigButton(r, n, d, [GOOD, '#3c78d2', HI, BAD, '#965aaa', '#ec7020'][i]);
+  MODE_KEYS.forEach((k, i) => {
+    const [n, d, col] = MODE_ROWS[k], y = 16 + i * 25, r = [10, y, 246, y + 23];
+    bigButton(r, n, d, col);
+    if (FLOOR_API) {
+      const c = COUNTS ? (COUNTS[k] | 0) : null, lab = c === null ? '-/12' : c + '/12', on = c > 0;
+      const w = tw(lab, 1, 'A') + 14, x1 = r[2] - 5, x0 = x1 - w;
+      panel(B, x0, y + 4, x1, y + 15, on ? '#2c4030' : UI2);
+      B.fillStyle = on ? GOOD : LINE; B.fillRect(x0 + 4, y + 8, 3, 3);
+      textA(B, lab, x0 + 9, y + 7, on ? GOOD : MUTE);
+    }
     BTN.push({ r, f: () => newShift(k) });
   });
-  const back = [12, 168, 80, 188];
-  panel(B, back[0], back[1], back[2], back[3], UI); textC(B, '< BACK', 46, 176, PAPER);
+  const back = [10, 168, 96, 188], nm = [150, 168, 246, 188];
+  panel(B, back[0], back[1], back[2], back[3], UI); textC(B, '< BACK', 53, 175, PAPER);
+  panel(B, nm[0], nm[1], nm[2], nm[3], UI); textC(B, 'NAME ' + (store('initials') || '???'), 198, 175, HI);
   BTN.push({ r: back, f: () => { state = 'title'; } });
+  BTN.push({ r: nm, f: () => { INI = (store('initials') || 'AAA').split(''); INI_NEXT = 'modes'; state = 'initials'; } });
 }
 let G_sel = 0;
 function drawChars(t) {
@@ -1336,10 +1351,10 @@ function drawChars(t) {
   T.fillStyle = '#3a3e4a'; T.beginPath(); T.ellipse(70, 168, 52, 10, 0, 0, Math.PI * 2); T.fill();
   const bob = Math.sin(t * 2.4) > 0.6 ? 1 : 0;
   T.drawImage(IMG[c.por + ((t % 3.2) < 0.12 ? 'b' : 'a')], 30, 22 + bob * 4 - 4, 80, 144);
-  text(T, c.name, 140, 24, HI, 2);
-  T.fillStyle = LINE; T.fillRect(140, 38, 106, 1);
-  c.look.forEach((l, i) => text(T, l, 140, 46 + i * 10, PAPER));
-  text(T, '8210 OPERATOR', 140, 82, MUTE);
+  text(T, c.name, 140, 28, HI);
+  T.fillStyle = LINE; T.fillRect(140, 40, 106, 1);
+  c.look.forEach((l, i) => textA(T, l[0] + l.slice(1).toLowerCase(), 140, 48 + i * 10, PAPER));
+  textA(T, '8210 operator', 140, 84, MUTE);
   T.drawImage(IMG[c.pre + 'side'], 140, 100, 105, 56);
   // bottom: the roster
   B.fillStyle = UI2; B.fillRect(0, 0, SW, SH);
@@ -1363,7 +1378,7 @@ function drawChars(t) {
 function drawResults() {
   T.fillStyle = UI2; T.fillRect(0, 0, SW, SH);
   textC(T, 'SHIFT COMPLETE', 128, 10, HI, 2);
-  textC(T, mode.name + (mode.daily ? '  ' + G.day : ''), 128, 26, MUTE);
+  textC(T, mode.name + (mode.daily ? '  ' + G.day : ''), 128, 30, MUTE);
   const L = mode.zamboni
     ? [['TIME', fmtClock(G.clock)], ['FLOOR CLEANED', (G.cover / 10).toFixed(1) + '%'], ['SPILLS CLEANED', G.zam.spillsDone + ' OF ' + G.zam.spills.length], ['SHELF BUMPS', G.scrapes]]
     : [['TIME', fmtClock(G.clock)], ['PLACEMENTS', G.placed], ['CORRECT', G.correct], ['BEST COMBO', 'X' + G.bestCombo], ['SHELF CLIPS', G.scrapes]];
@@ -1371,7 +1386,7 @@ function drawResults() {
   if (mode.block) L.push(['BLOCKED TRIES', G.blocked]);
   if (mode.carts) L.push(['CART BUMPS', G.bumps]);
   if (mode.help) L.push(['HELPED', G.helpOk + ' OF ' + (G.helpOk + G.helpBad)]);
-  L.forEach(([k, v], i) => { text(T, k, 40, 42 + i * 12, PAPER); text(T, String(v), 216 - tw(v), 42 + i * 12, HI); });
+  L.forEach(([k, v], i) => { text(T, k, 24, 46 + i * 13, PAPER); text(T, String(v), 232 - tw(v), 46 + i * 13, HI); });
   if (G.newBest && (tt * 3 | 0) % 2) textC(T, 'NEW BEST ON THIS PHONE!', 128, 178, GOOD);
 
   B.fillStyle = UI2; B.fillRect(0, 0, SW, SH);
@@ -1380,25 +1395,25 @@ function drawResults() {
     ? [['FLOOR CLEANED', '+' + G.cover * 10], ['SPILLS', '+' + G.zam.spillsDone * 150], ['SHELF BUMPS', String(G.score)]]
     : [['FLOOR SCORE', G.score], ['TIME BONUS', '+' + G.timeBonus]];
   if (!mode.block && !mode.zamboni) R.push(['AUDIT: ' + G.auditErrors + ' WRONG', '-' + G.auditPenalty]);
-  R.forEach(([k, v], i) => { text(B, k, 30, 20 + i * 11, PAPER); text(B, String(v), 226 - tw(v), 20 + i * 11, String(v)[0] === '-' && v !== '-0' ? BAD : PAPER); });
-  const fy = 22 + R.length * 11;
-  B.fillStyle = LINE; B.fillRect(30, fy - 2, 196, 1);
-  text(B, 'FINAL', 30, fy + 2, HI, 2); text(B, String(G.final), 226 - tw(G.final, 2), fy + 2, HI, 2);
-  const sc = mode.zamboni ? [3200, 2200, 1200] : [9000, 6000, 3000];
+  R.forEach(([k, v], i) => { text(B, k, 22, 20 + i * 12, PAPER); text(B, String(v), 234 - tw(v), 20 + i * 12, String(v)[0] === '-' && v !== '-0' ? BAD : PAPER); });
+  const fy = 20 + R.length * 12;
+  B.fillStyle = LINE; B.fillRect(22, fy - 2, 212, 1);
+  text(B, 'FINAL', 22, fy + 3, HI, 2); text(B, String(G.final), 234 - tw(G.final, 2), fy + 3, HI, 2);
+  const sc = mode.zamboni ? [3200, 2200, 1200] : [2250, 1500, 750].map(v => v * G.pallets);
   const stars = G.final > sc[0] ? 3 : G.final > sc[1] ? 2 : G.final > sc[2] ? 1 : 0;
-  textC(B, ['KEEP PRACTICING', 'GOOD SHIFT', 'GREAT SHIFT', 'STORE MANAGER MATERIAL'][stars], 128, 82, [MUTE, PAPER, GOOD, HI][stars]);
-  for (let i = 0; i < 3; i++) text(B, '*', 104 + i * 18, 92, i < stars ? HI : LINE, 3);
+  textC(B, ['KEEP PRACTICING', 'GOOD SHIFT', 'GREAT SHIFT', 'STORE MANAGER MATERIAL'][stars], 128, 84, [MUTE, PAPER, GOOD, HI][stars]);
+  for (let i = 0; i < 3; i++) text(B, '*', 98 + i * 22, 95, i < stars ? HI : LINE, 2);
   const post = [12, 116, 244, 146], again = [12, 154, 124, 186], menu = [132, 154, 244, 186];
   BTN = [];
-  if (G.posted) { panel(B, post[0], post[1], post[2], post[3], UI); textC(B, 'SCORE POSTED', 128, 127, GOOD); }
+  if (G.posted) { panel(B, post[0], post[1], post[2], post[3], UI); textC(B, 'SCORE POSTED', 128, 128, GOOD); }
   else {
     panel(B, post[0], post[1], post[2], post[3], API ? '#3c6ec8' : UI);
-    textC(B, API ? 'POST TO SCOREBOARD' : 'SCOREBOARD NOT SET UP', 128, API ? 125 : 128, API ? PAPER : MUTE, API ? 1 : 1);
-    if (API) textC(B, 'ENTER YOUR INITIALS', 128, 135, '#c8d8f0');
-    if (API) BTN.push({ r: post, f: () => { state = 'initials'; INI = (store('initials') || 'AAA').split(''); } });
+    textC(B, API ? 'POST TO SCOREBOARD' : 'SCOREBOARD NOT SET UP', 128, API ? 123 : 128, API ? PAPER : MUTE);
+    if (API) textAC(B, 'Posting as ' + (store('initials') || 'AAA'), 128, 135, '#c8d8f0');
+    if (API) BTN.push({ r: post, f: submitScore });
   }
-  panel(B, again[0], again[1], again[2], again[3], UI); textC(B, 'AGAIN', 68, 166, PAPER, 2);
-  panel(B, menu[0], menu[1], menu[2], menu[3], UI); textC(B, 'MENU', 188, 166, PAPER, 2);
+  panel(B, again[0], again[1], again[2], again[3], UI); textC(B, 'AGAIN', 68, 163, PAPER, 2);
+  panel(B, menu[0], menu[1], menu[2], menu[3], UI); textC(B, 'MENU', 188, 163, PAPER, 2);
   BTN.push({ r: again, f: () => newShift(modeKey) }, { r: menu, f: () => { state = 'title'; } });
 }
 
@@ -1406,34 +1421,36 @@ function drawResults() {
 let INI = ['A', 'A', 'A'];
 const ABC = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 function cycle(i, d) { INI[i] = ABC[(ABC.indexOf(INI[i]) + d + 26) % 26]; beep(440 + d * 40, 0.04); }
+let INI_NEXT = 'modes';
 function drawInitials() {
-  T.fillStyle = UI2; T.fillRect(0, 0, SW, SH);
-  textC(T, 'POST YOUR SCORE', 128, 30, HI, 2);
-  textC(T, mode.name + (mode.daily ? '  ' + G.day : ''), 128, 50, MUTE);
-  textC(T, String(G.final), 128, 72, PAPER, 5);
-  textC(T, 'TIME ' + fmtClock(G.clock) + '   ' + CHARS[charIdx].name, 128, 110, MUTE);
-  textC(T, 'SCORES ARE PUBLIC: INITIALS ONLY', 128, 160, LINE);
+  drawTitleTop(tt);
+  T.fillStyle = 'rgba(30,32,40,0.82)'; T.fillRect(28, 66, 200, 70);
+  textC(T, "WHO'S ON SHIFT?", 128, 76, HI);
+  textAC(T, 'Your initials show over your truck on the', 128, 96, PAPER);
+  textAC(T, 'shared floor and next to your scores.', 128, 106, PAPER);
+  textAC(T, 'Scores are public: initials only.', 128, 122, MUTE);
   B.fillStyle = UI2; B.fillRect(0, 0, SW, SH);
-  textC(B, 'ENTER YOUR INITIALS', 128, 8, HI);
+  textC(B, 'ENTER YOUR INITIALS', 128, 6, HI);
   BTN = [];
   for (let i = 0; i < 3; i++) {
-    const x = 46 + i * 60, up = [x, 22, x + 44, 44], box = [x, 48, x + 44, 100], dn = [x, 104, x + 44, 126];
-    panel(B, up[0], up[1], up[2], up[3], UI); textC(B, '+', x + 22, 30, PAPER);
-    panel(B, box[0], box[1], box[2], box[3], '#3a3e4a'); textC(B, INI[i], x + 23, 62, HI, 5);
+    const x = 46 + i * 60, up = [x, 20, x + 44, 42], box = [x, 46, x + 44, 100], dn = [x, 104, x + 44, 126];
+    panel(B, up[0], up[1], up[2], up[3], UI); textC(B, '+', x + 22, 28, PAPER);
+    panel(B, box[0], box[1], box[2], box[3], '#3a3e4a'); textC(B, INI[i], x + 22, 56, HI, 5);
     panel(B, dn[0], dn[1], dn[2], dn[3], UI); textC(B, '-', x + 22, 112, PAPER);
     BTN.push({ r: up, f: () => cycle(i, -1) }, { r: box, f: () => cycle(i, 1) }, { r: dn, f: () => cycle(i, 1) });
   }
+  textAC(B, 'Stick or tap +/- to change. A for next letter.', 128, 136, MUTE);
   const back = [12, 150, 116, 184], ok = [140, 150, 244, 184];
   panel(B, back[0], back[1], back[2], back[3], UI); textC(B, '< BACK', 64, 164, PAPER);
-  panel(B, ok[0], ok[1], ok[2], ok[3], '#3c9650'); textC(B, 'POST', 192, 162, PAPER, 2);
-  BTN.push({ r: back, f: () => { state = 'results'; } }, { r: ok, f: submitScore });
+  panel(B, ok[0], ok[1], ok[2], ok[3], '#3c9650'); textC(B, 'NEXT >', 192, 164, PAPER);
+  BTN.push({ r: back, f: () => { state = 'title'; } }, { r: ok, f: () => { store('initials', INI.join('')); state = INI_NEXT; beep(660, 0.08); beep(880, 0.1); } });
 }
 
 // ---------- scoreboard client ----------
 const BOARD = {};
 let BV = { mode: 'newhire', range: 'all', back: 'title', highlight: null, note: null };
 async function submitScore() {
-  const ini = INI.join(''); store('initials', ini);
+  const ini = store('initials') || 'AAA';
   BV = { mode: modeKey, range: mode.daily ? 'today' : 'all', back: 'results', highlight: null, note: 'SENDING...' };
   state = 'board';
   try {
@@ -1473,47 +1490,54 @@ function drawBoard() {
   // top: header + this phone's bests
   T.fillStyle = UI2; T.fillRect(0, 0, SW, SH);
   textC(T, 'SCOREBOARD', 128, 10, HI, 2);
-  textC(T, MODES[m].name + '  -  ' + (m === 'daily' ? todayUTC() : { today: 'TODAY', week: 'THIS WEEK', all: 'ALL TIME' }[r]), 128, 28, PAPER);
-  if (BV.note) { panel(T, 30, 44, 226, 62, UI); textC(T, BV.note, 128, 51, BV.note.startsWith('RANK') ? GOOD : HI); }
-  panel(T, 30, 74, 226, 150, UI);
-  text(T, 'YOUR BESTS ON THIS PHONE', 38, 80, MUTE);
+  textC(T, MODES[m].name + ' - ' + (m === 'daily' ? todayUTC() : { today: 'TODAY', week: 'THIS WEEK', all: 'ALL TIME' }[r]), 128, 30, MUTE);
+  let by = 46;
+  if (BV.note) { panel(T, 24, 42, 232, 58, UI); textC(T, BV.note, 128, 47, BV.note.startsWith('RANK') ? GOOD : HI); by = 64; }
+  const lh = 12, bh = 14 + MODE_KEYS.length * lh + 4;
+  panel(T, 24, by, 232, by + bh, UI);
+  textA(T, 'Your bests on this phone', 32, by + 6, MUTE);
   MODE_KEYS.forEach((k, i) => {
-    const best = store('best.' + k + (k === 'daily' ? '.' + todayUTC() : ''));
-    text(T, MODES[k].name, 38, 94 + i * 11, k === m ? HI : PAPER);
-    text(T, best ? String(best.score) : '-', 218 - tw(best ? best.score : '-'), 94 + i * 11, k === m ? HI : PAPER);
+    const best = store('best.' + k + (k === 'daily' ? '.' + todayUTC() : '')), y = by + 18 + i * lh, c = k === m ? HI : PAPER;
+    text(T, MODES[k].name, 32, y, c);
+    const v = best ? String(best.score) : '-'; text(T, v, 224 - tw(v), y, c);
   });
   const msg = { offline: 'SCOREBOARD NOT SET UP YET', err: 'SCOREBOARD OFFLINE', loading: 'LOADING...' }[b.status];
-  if (msg) textC(T, msg, 128, 168, b.status === 'loading' ? MUTE : BAD);
+  if (msg) textC(T, msg, 128, Math.min(180, by + bh + 8), b.status === 'loading' ? MUTE : BAD);
   // bottom: tabs + list
   B.fillStyle = UI2; B.fillRect(0, 0, SW, SH);
   BTN = [];
+  const TAB = { zamboni: 'ZAMB', newhire: 'NEW', easy: 'EASY', medium: 'MED', hard: 'HARD', daily: 'DAY' };
   MODE_KEYS.forEach((k, i) => {
-    const t = [4 + i * 42, 3, 4 + i * 42 + 39, 19], on = k === m;
+    const t = [3 + i * 42, 3, 3 + i * 42 + 40, 19], on = k === m;
     panel(B, t[0], t[1], t[2], t[3], on ? '#3a3e4a' : UI);
     if (on) { B.fillStyle = HI; B.fillRect(t[0] + 2, t[3] - 2, t[2] - t[0] - 3, 2); }
-    textC(B, MODE_SHORT[k], (t[0] + t[2]) / 2, 8, on ? HI : PAPER);
+    textC(B, TAB[k], (t[0] + t[2]) / 2 + 1, 7, on ? HI : PAPER);
     BTN.push({ r: t, f: () => { BV.mode = k; BV.note = null; } });
   });
   if (m !== 'daily') ['today', 'week', 'all'].forEach((rg, i) => {
-    const t = [40 + i * 60, 23, 40 + i * 60 + 56, 37], on = rg === r;
+    const t = [34 + i * 64, 23, 34 + i * 64 + 60, 37], on = rg === r;
     panel(B, t[0], t[1], t[2], t[3], on ? '#3a3e4a' : UI2);
-    textC(B, { today: 'TODAY', week: 'WEEK', all: 'ALL' }[rg], (t[0] + t[2]) / 2, 28, on ? HI : MUTE);
+    textC(B, { today: 'TODAY', week: 'WEEK', all: 'ALL' }[rg], (t[0] + t[2]) / 2 + 1, 27, on ? HI : MUTE);
     BTN.push({ r: t, f: () => { BV.range = rg; } });
   });
-  else textC(B, 'SAME PALLETS FOR EVERYONE TODAY', 128, 28, MUTE);
-  text(B, '#', 10, 42, MUTE); text(B, 'NAME', 28, 42, MUTE); text(B, 'SCORE', 150 - tw('SCORE'), 42, MUTE); text(B, 'TIME', 200, 42, MUTE);
-  if (!b.rows.length && b.status === 'ok') textC(B, 'NO SCORES YET - BE THE FIRST', 128, 90, MUTE);
+  else textAC(B, 'Same pallets for everyone today', 128, 28, MUTE);
+  const cx = [10, 30, 170, 246];
+  textA(B, '#', cx[0], 43, MUTE); textA(B, 'Name', cx[1], 43, MUTE);
+  textA(B, 'Score', cx[2] - tw('Score', 1, 'A'), 43, MUTE); textA(B, 'Time', cx[3] - tw('Time', 1, 'A'), 43, MUTE);
+  B.fillStyle = LINE; B.fillRect(6, 51, 244, 1);
+  if (!b.rows.length && b.status === 'ok') textAC(B, 'No scores yet. Be the first.', 128, 96, MUTE);
   b.rows.slice(0, 10).forEach((row, i) => {
-    const y = 52 + i * 11, me = row.id === BV.highlight;
-    if (me) { B.fillStyle = '#3a3e4a'; B.fillRect(4, y - 2, 248, 10); }
+    const y = 55 + i * 11, me = row.id === BV.highlight;
+    if (me) { B.fillStyle = '#3a3e4a'; B.fillRect(4, y - 2, 248, 11); }
     const col = me ? HI : i === 0 ? '#f0d878' : PAPER;
-    text(B, String(i + 1), 10, y, col); text(B, row.initials, 28, y, col);
-    B.fillStyle = row.char === 1 ? '#5280c8' : '#8a6040'; B.fillRect(46, y, 4, 5);
-    text(B, String(row.score), 150 - tw(row.score), y, col); text(B, fmtClock(row.time_s), 200, y, col);
+    text(B, String(i + 1), cx[0], y, col); text(B, row.initials, cx[1], y, col);
+    B.fillStyle = row.char === 1 ? '#5280c8' : '#8a6040'; B.fillRect(cx[1] + tw(row.initials) + 5, y + 1, 5, 5);
+    const sv = String(row.score), tv = fmtClock(row.time_s);
+    text(B, sv, cx[2] - tw(sv), y, col); text(B, tv, cx[3] - tw(tv), y, col);
   });
-  const back = [12, 166, 100, 188], ref = [156, 166, 244, 188];
-  panel(B, back[0], back[1], back[2], back[3], UI); textC(B, '< BACK', 56, 174, PAPER);
-  panel(B, ref[0], ref[1], ref[2], ref[3], UI); textC(B, 'REFRESH', 200, 174, PAPER);
+  const back = [12, 166, 116, 188], ref = [140, 166, 244, 188];
+  panel(B, back[0], back[1], back[2], back[3], UI); textC(B, '< BACK', 64, 174, PAPER);
+  panel(B, ref[0], ref[1], ref[2], ref[3], UI); textC(B, 'REFRESH', 192, 174, PAPER);
   BTN.push({ r: back, f: () => { state = BV.back; } }, { r: ref, f: () => loadBoard(m, r, true) });
 }
 // ============================================================
@@ -1674,25 +1698,26 @@ function drawZamTop() {
     }
   }
   T.fillStyle = UI2; T.fillRect(0, 0, SW, 13);
-  text(T, 'IDLA', 4, 4, HI); text(T, 'ZAMBONI  NIGHT SCRUB', 26, 4, PAPER);
-  text(T, fmtClock(Math.ceil(Z.left)), 230, 4, Z.left < 15 && (tt * 4 | 0) % 2 ? BAD : HI);
+  text(T, 'IDLA', 4, 3, HI); text(T, 'ZAMBONI', 42, 3, PAPER);
+  const zc = fmtClock(Math.ceil(Z.left)); text(T, zc, 252 - tw(zc), 3, Z.left < 15 && (tt * 4 | 0) % 2 ? BAD : HI);
   panel(T, 203, 16, 254, 171);
   let y = 21;
-  const L = (s, c = PAPER) => { text(T, s, 207, y, c); y += 9; };
-  L('CLEANED', HI); L((Z.credit / ZWALKN * 100).toFixed(1) + '%', GOOD);
-  y += 3; L('SPILLS', HI); L(Z.spillsDone + '/' + Z.spills.length, PAPER);
-  y += 3; L('SCORE', HI); L(zamScore(), PAPER);
-  y += 3; L('SPEED', HI); L(ZSPEEDS[Z.speed].name, [GOOD, HI, BAD][Z.speed]);
-  y += 3; L('BUMPS', HI); L(G.scrapes + G.crashes, G.scrapes + G.crashes ? BAD : GOOD);
-  if (NET.state === 'on') { L((OTHERS.length + 1) + ' HERE', '#8cb8f0'); } else if (FLOOR_API) L(NET.state === 'connecting' ? 'JOINING' : 'SOLO', MUTE);
+  const K = s => { textA(T, s, 207, y, MUTE); y += 8; };
+  const L = (s, c = PAPER) => { s = String(s); if (tw(s) <= 45) { text(T, s, 207, y, c); y += 10; } else { textA(T, s, 207, y, c); y += 8; } };
+  K('Cleaned'); L((Z.credit / ZWALKN * 100).toFixed(1) + '%', GOOD);
+  y += 3; K('Spills'); L(Z.spillsDone + '/' + Z.spills.length, PAPER);
+  y += 3; K('Score'); L(zamScore(), PAPER);
+  y += 3; K('Speed'); L(ZSPEEDS[Z.speed].name, [GOOD, HI, BAD][Z.speed]);
+  y += 3; K('Bumps'); L(G.scrapes + G.crashes, G.scrapes + G.crashes ? BAD : GOOD);
+  if (NET.state === 'on') { y += 3; textA(T, (OTHERS.length + 1) + ' here', 207, y, '#8cb8f0'); } else if (FLOOR_API) { y += 3; K(NET.state === 'connecting' ? 'Joining...' : 'Solo'); }
   bar(T, 207, 162, 42, Z.left / ZTIME, Z.left < 15 ? BAD : GOOD);
   T.fillStyle = UI; T.fillRect(0, 173, 202, 19);
-  text(T, G.toastT > 0 ? G.toast : 'SCRUB THE DARK FLOOR CLEAN', 6, 180, G.toastT > 0 ? HI : PAPER);
+  textFit(T, G.toastT > 0 ? G.toast : 'SCRUB THE DARK FLOOR CLEAN', 5, 179, G.toastT > 0 ? HI : PAPER, 194);
 }
 
 // ---------- in-game menu (opening it takes you off the floor and pauses your clock) ----------
 const MENU_BTN = [212, 2, 253, 15];
-function drawMenuButton() { panel(B, MENU_BTN[0], MENU_BTN[1], MENU_BTN[2], MENU_BTN[3], UI2); textC(B, 'MENU', 233, 6, PAPER); }
+function drawMenuButton() { panel(B, MENU_BTN[0], MENU_BTN[1], MENU_BTN[2], MENU_BTN[3], UI2); textC(B, 'MENU', 233, 5, PAPER); }
 function openMenu() {
   if (!G || !['drive', 'battle'].includes(state)) return;
   G.menuFrom = state; G.menuView = 'main';
@@ -1705,20 +1730,20 @@ function drawMenu() {
   textC(T, 'PAUSED', 128, 30, HI, 3);
   textC(T, mode.name, 128, 58, MUTE);
   if (mode.zamboni) {
-    textC(T, 'TIME LEFT ' + fmtClock(Math.ceil(G.zam.left)) + '    SCORE ' + zamScore(), 128, 80, PAPER);
+    textC(T, 'LEFT ' + fmtClock(Math.ceil(G.zam.left)) + '  SCORE ' + zamScore(), 128, 80, PAPER);
   } else {
-    textC(T, 'PALLET ' + G.palletNo + '/' + G.pallets + '    SCORE ' + G.score + '    ' + fmtClock(G.clock), 128, 80, PAPER);
+    textC(T, 'PLT ' + G.palletNo + '/' + G.pallets + '  SCORE ' + G.score + '  ' + fmtClock(G.clock), 128, 80, PAPER);
   }
-  if (NET.state === 'on') textC(T, 'YOU ARE OFF THE FLOOR UNTIL YOU RESUME', 128, 104, '#8cb8f0');
-  textC(T, 'YOUR CLOCK IS PAUSED', 128, 116, MUTE);
+  if (NET.state === 'on') textAC(T, 'You are off the floor until you resume', 128, 104, '#8cb8f0');
+  textC(T, 'YOUR CLOCK IS PAUSED', 128, 118, MUTE);
   B.fillStyle = UI2; B.fillRect(0, 0, SW, SH);
   BTN = [];
   if (G.menuView === 'controls') {
     textC(B, 'CONTROLS', 128, 6, HI);
     const lines = mode.zamboni
-      ? ['STICK: WALK THE SCRUBBER', 'POINT AHEAD: SCRUB FORWARD', 'POINT BACK: BACK UP SLOWLY', 'A: CHANGE SPEED', '  SNAIL - CLEANS FULLY, LIFTS SPILLS FAST', '  WALKING - NORMAL', '  RABBIT - FAST BUT STREAKY, SPILLS LIFT SLOWLY', 'B: HORN', 'THE PATH IS 32 INCHES WIDE']
-      : ['STICK: WALK THE OPERATOR', 'POINT AHEAD: PULL, PALLET TRAILS', 'POINT BACK: PUSH FORKS FIRST', 'A: UNLOAD / PICK UP A PALLET', 'B: HORN - SHOPPERS STOP', 'UNLOAD: DRAG CASES TO THEIR SPOTS', 'TAKE CORNERS WIDE - THE PALLET', '  CUTS INSIDE ON TURNS'];
-    lines.forEach((l, i) => text(B, l, 14, 22 + i * 13, PAPER));
+      ? [['STICK', 'Walk the scrubber'], ['AHEAD', 'Scrub forward'], ['BACK', 'Back up slowly'], ['A', 'Change speed'], ['', 'Snail: cleans fully, lifts spills fast'], ['', 'Walking: normal'], ['', 'Rabbit: fast but streaky, spills lift slowly'], ['B', 'Horn'], ['', 'The cleaning path is 32 inches wide']]
+      : [['STICK', 'Walk the operator'], ['AHEAD', 'Pull. The pallet trails behind'], ['BACK', 'Push, forks first'], ['A', 'Unload / pick up a pallet'], ['B', 'Horn. Shoppers stop'], ['DRAG', 'Unload cases onto their spots'], ['', 'Take corners wide: the pallet'], ['', 'cuts inside on turns']];
+    lines.forEach(([k, l], i) => { if (k) text(B, k, 12, 22 + i * 14, HI); textA(B, l, 62, 23 + i * 14, PAPER); });
     const back = [12, 160, 120, 186];
     panel(B, back[0], back[1], back[2], back[3], UI); textC(B, '< BACK', 66, 170, PAPER);
     BTN.push({ r: back, f: () => { G.menuView = 'main'; } });
@@ -1735,10 +1760,10 @@ function drawMenu() {
   for (const [r, label, col, sc, f] of items) {
     panel(B, r[0], r[1], r[2], r[3], UI);
     B.fillStyle = col; B.fillRect(r[0] + 3, r[1] + 3, 3, r[3] - r[1] - 5);
-    textC(B, label, (r[0] + r[2]) / 2, (r[1] + r[3]) / 2 - (sc === 2 ? 5 : 2), PAPER, sc);
+    textC(B, label, (r[0] + r[2]) / 2 + 1, (r[1] + r[3]) / 2 - (sc === 2 ? 7 : 3), PAPER, sc);
     BTN.push({ r, f });
   }
-  textC(B, 'QUITTING ENDS THE SHIFT WITHOUT A SCORE', 128, 166, LINE);
+  textAC(B, 'Quitting ends the shift without a score', 128, 166, LINE);
 }
 
 // ---------- joystick + A/B on menu screens ----------
@@ -1752,7 +1777,7 @@ function navList() {
 function navBack() {
   if (state === 'title') return;
   if (state === 'modes' || state === 'chars' || state === 'results') state = 'title';
-  else if (state === 'initials') state = 'results';
+  else if (state === 'initials') state = 'title';
   else if (state === 'board') state = BV.back;
   else if (state === 'menu') { if (G.menuView !== 'main') G.menuView = 'main'; else resumeMenu(); }
 }
