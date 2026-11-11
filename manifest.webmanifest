@@ -1,5 +1,5 @@
 {
-  "name": "IDLA - Shelf Stocker",
+  "name": "IDLA",
   "short_name": "IDLA",
   "description": "Drive a Raymond 8210-style walkie pallet truck around a grocery store and stock the shelves.",
   "start_url": "./",
