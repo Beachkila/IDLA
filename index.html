@@ -742,6 +742,18 @@ function polyHitsRect(poly, r) {
   }
   return true;
 }
+// ---------- unsticking trucks and carts ----------
+// per-cart contact state (by cart number, so it survives shared-floor snapshots)
+function cartKey(c) { return c.i !== undefined ? c.i : G.carts.indexOf(c); }
+function cartState(c) { G.cartState = G.cartState || {}; const k = cartKey(c); return G.cartState[k] || (G.cartState[k] = { bumped: false, lastBlock: -9, blockT: 0, ghost: false }); }
+function headingAt(c, x, y) { return (c.tx - c.x) * (x - c.x) + (c.ty - c.y) * (y - c.y) > 0; }   // is the cart moving toward (x, y)?
+function truckTouches(t, c) { for (const p of PARTS) if (polyHitsRect(partPoly(t.x, t.y, t.h, p, t.loaded), cartRect(c))) return true; return false; }
+function turnBackLocal(c) {   // a shopper goes back the way they came
+  if (c.pxi === undefined || c.pxi < 0) { chooseNext(c); return; }
+  const off = () => rnd(-CART_SPREAD, CART_SPREAD), txi = c.pxi, tyi = c.pyi;
+  c.pxi = c.xi; c.pyi = c.yi; c.xi = txi; c.yi = tyi; c.waited = 0;
+  if (txi !== c.pxi) { c.tx = LANES_X[txi] + off(); c.ty = c.y; } else { c.tx = c.x; c.ty = LANES_Y[tyi] + off(); }
+}
 function cartRect(c) { return c.horiz ? [c.x - 2.5, c.y - 1.25, c.x + 2.5, c.y + 1.25] : [c.x - 1.25, c.y - 2.5, c.x + 1.25, c.y + 2.5]; }
 // what would the truck hit at this pose? -> { part, cart } or null
 function polysHit(a, b) {   // separating-axis test for two convex quads
@@ -759,11 +771,11 @@ function truckHitsTruck(x, y, h, loaded, o) {
   for (const p of PARTS) { const a = partPoly(x, y, h, p, loaded); for (const q of op) if (polysHit(a, partPoly(o.x, o.y, o.h, q, o.loaded))) return true; }
   return false;
 }
-function collideAt(x, y, h, loaded, skip) {
+function collideAt(x, y, h, loaded, skip, cartOK) {
   for (const p of PARTS) {
     const poly = partPoly(x, y, h, p, loaded);
     for (const s of SOLID) if (polyHitsRect(poly, s)) return { part: p.part };
-    for (const c of G.carts) if (polyHitsRect(poly, cartRect(c))) return { part: p.part, cart: c };
+    for (const c of G.carts) if (polyHitsRect(poly, cartRect(c)) && !(cartOK && cartOK(c))) return { part: p.part, cart: c };
   }
   for (const o of OTHERS) if (!(skip && skip.has(o.id)) && truckHitsTruck(x, y, h, loaded, o)) return { part: 'truck', truck: o };
   return null;
@@ -782,7 +794,7 @@ function newCart(i) {
   let xi, yi;
   do { xi = rri(LANES_X.length); yi = rri(LANES_Y.length); } while (Math.hypot(LANES_X[xi] - 64, LANES_Y[yi] - 83) < 25);
   const x = LANES_X[xi] + off(), y = LANES_Y[yi] + off();
-  const c = { x, y, tx: x, ty: y, xi, yi, pxi: -1, pyi: -1, horiz: false, wait: 0, skin: 'c' + (i % 3), stopped: 0, help: false };
+  const c = { i, x, y, tx: x, ty: y, xi, yi, pxi: -1, pyi: -1, horiz: false, wait: 0, waited: 0, skin: 'c' + (i % 3), stopped: 0, help: false };
   chooseNext(c); return c;
 }
 function chooseNext(c) {
@@ -804,7 +816,9 @@ function updateCarts(dt) {
     const sp = 2.6 * dt, nx = c.x + dx / d * Math.min(sp, d), ny = c.y + dy / d * Math.min(sp, d);
     const horiz = Math.abs(dx) > Math.abs(dy);
     const nr = horiz ? [nx - 2.5, ny - 1.25, nx + 2.5, ny + 1.25] : [nx - 1.25, ny - 2.5, nx + 1.25, ny + 2.5];
-    if (overlap(nr, tr)) { c.wait = 0.4; continue; }   // shoppers wait for the truck
+    const [tcx2, tcy2] = truckCenter(G.truck);
+    if (overlap(nr, tr) && Math.hypot(nx - tcx2, ny - tcy2) < Math.hypot(c.x - tcx2, c.y - tcy2)) { c.wait = 0.4; c.waited = (c.waited || 0) + 0.4; if (c.waited >= 2) turnBackLocal(c); continue; }   // wait, then go around
+    c.waited = 0;
     c.x = nx; c.y = ny; c.horiz = horiz; c.dir = horiz ? (dx > 0 ? 1 : 3) : (dy > 0 ? 2 : 0);
   }
 }
@@ -868,11 +882,19 @@ function drive(t, dt) {
   const f = fwdOf(t.h), Lx = t.x - f[0] * WB, Ly = t.y - f[1] * WB;
   // trucks I'm already touching (e.g. both spawned on one spot) don't block me, so we can separate
   const skip = new Set(OTHERS.filter(o => truckHitsTruck(t.x, t.y, t.h, t.loaded, o)).map(o => o.id));
+  const touching = new Set(G.carts.filter(c => truckTouches(t, c)).map(cartKey));
+  for (const c of G.carts) {   // a contact ends once the cart hasn't blocked me for a moment and we're apart
+    const st = cartState(c);
+    if (!touching.has(cartKey(c)) && tt - st.lastBlock > 1.2) { st.ghost = false; st.blockT = 0; st.bumped = false; }
+  }
+  const [ocx, ocy] = truckCenter(t);
   for (const frac of [1, 0.5, 0.25]) {
     const sp = speed * dt * frac;
     const nx = t.x + Math.cos(ang) * sp, ny = t.y + Math.sin(ang) * sp;
     const nh = Math.atan2(ny - Ly, nx - Lx);         // load wheels trail like a trailer hitch
-    const hit = collideAt(nx, ny, nh, t.loaded, skip);
+    const [ncx, ncy] = truckCenter({ x: nx, y: ny, h: nh });
+    const cartOK = c => cartState(c).ghost || (touching.has(cartKey(c)) && Math.hypot(ncx - c.x, ncy - c.y) >= Math.hypot(ocx - c.x, ocy - c.y) - 0.02);
+    const hit = collideAt(nx, ny, nh, t.loaded, skip, cartOK);
     if (!hit) { t.x = nx; t.y = ny; t.h = nh; t.moving = true; t.moved = true; t.anim += dt; t.frame = ((t.anim * 8) | 0) % 4; return; }
     if (hit.truck) {
       t.moving = false;
@@ -880,9 +902,17 @@ function drive(t, dt) {
       return;
     }
     if (hit.cart) {
-      t.stun = 0.6; hit.cart.stopped = 1.5; G.bumps++; G.score -= 25; G.combo = 0;
-      if (G.netCarts) netSend({ t: 'cart', i: hit.cart.i, hold: 1.5 });
-      beep(120, 0.2, 'sawtooth', 0.08); toast('BUMPED A CART!  -25'); t.moving = false; return;
+      const st = cartState(hit.cart);
+      t.moving = false;
+      if (tt - st.lastBlock < 0.5) st.blockT += tt - st.lastBlock;
+      st.lastBlock = tt;
+      if (st.blockT > 3) { st.ghost = true; return; }          // still locked together: the cart lets you through
+      if (st.bumped) return;                                  // one bump per contact: no repeat penalty
+      st.bumped = true; t.stun = 0.6; G.bumps++; G.score -= 25; G.combo = 0;
+      const [hx, hy] = truckCenter(t);
+      if (G.netCarts) netSend({ t: 'cart', i: hit.cart.i, hold: 0.6, turn: 1 });
+      else { hit.cart.stopped = 0.6; if (headingAt(hit.cart, hx, hy)) turnBackLocal(hit.cart); }   // the shopper backs off the way they came
+      beep(120, 0.2, 'sawtooth', 0.08); toast('BUMPED A CART!  -25'); return;
     }
     if (frac === 0.25) {
       t.moving = false;
@@ -1108,7 +1138,10 @@ function drawDriveBottom() {
   for (const c of G.carts) {
     const sx = c.x * PX - cx, sy = c.y * PX - cy;
     if (sx < -30 || sy < -30 || sx > vw + 30 || sy > vh + 30) continue;
+    const ghost = G.cartState && (G.cartState[cartKey(c)] || {}).ghost;
+    if (ghost) B.globalAlpha = 0.45;
     drawCart(B, c, sx, sy);
+    B.globalAlpha = 1;
     if (c.stopped > 0 && c.stopped < 90) text(B, '!', sx - 1, sy - 22, BAD);
     if (G.help && (G.help.cart === c || (c.i !== undefined && G.help.cart.i === c.i))) text(B, '?', sx - 1, sy - 22, HI);
   }
