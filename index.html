@@ -1444,7 +1444,7 @@ function drawResults() {
   const L = mode.cashier
     ? [['ITEMS SCANNED', C.items], ['ITEMS PER MIN', Math.round(C.items / 2)], ['CLEAN SCANS', C.clean], ['PRODUCE CODES', C.codes + (C.lookups ? ' (' + C.lookups + ' LOOKUP)' : '')], ['ORDERS', C.orders], ['CHANGE RIGHT', C.changeOk + ' OF ' + (C.changeOk + C.changeBad)], ['CHANGE +/-', (C.changeDiff > 0 ? '+' : C.changeDiff < 0 ? '-' : '') + fmtMoney(Math.abs(C.changeDiff))], ['BEST COMBO', 'X' + G.bestCombo]]
     : mode.zamboni
-    ? [['TIME', fmtClock(G.clock)], ['FLOOR CLEANED', (G.cover / 10).toFixed(1) + '%'], ['SPILLS CLEANED', G.zam.spillsDone + ' OF ' + G.zam.spills.length], ['SHELF BUMPS', G.scrapes]]
+    ? [['TIME', fmtClock(G.clock)], ['FLOOR CLEANED', (G.cover / 10).toFixed(1) + '%'], ['SPILLS CLEANED', G.zam.spillsDone], ['SHELF BUMPS', G.scrapes]]
     : [['TIME', fmtClock(G.clock)], ['PLACEMENTS', G.placed], ['CORRECT', G.correct], ['BEST COMBO', 'X' + G.bestCombo], ['SHELF CLIPS', G.scrapes]];
   if (G.crashes) L.push(['STOCKER CRASHES', G.crashes]);
   if (mode.block) L.push(['BLOCKED TRIES', G.blocked]);
