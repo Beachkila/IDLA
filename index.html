@@ -133,6 +133,7 @@ const PRODUCTS = {
 const PCOL = { R:'#d63c34', O:'#f48c32', Y:'#f0c440', G:'#3c9650', L:'#8cd25a', B:'#3c6ec8', C:'#78bed2', P:'#965aaa',
   M:'#e65a8c', W:'#f6f6f0', E:'#ecd2a8', T:'#d2a05a', K:'#a8703c', D:'#5c3a24', N:'#2c3c78', S:'#b4bac4', A:'#3a3a44', F:'#f0a0a0' };
 const ART = {
+  k_WONION:'onion W E', k_ROMA:'roma R G', k_RGRAPE:'bunch P G', k_RONION:'onion P K', k_ICEBRG:'iceberg L G', k_MANGO:'mango Y R', k_WMELON:'melon L G', k_CALABZ:'calabaza G O', k_AVOCAD:'avocado G D', k_LIMES:'citrus L G', k_GALA:'apple R Y', k_BANANA4:'banana Y D', k_PAPAYA:'papaya O L', k_GGRAPE:'bunch L G', k_OBANAN:'banana Y G', k_CANTLP:'cantaloupe T E', k_RUSSET:'potato K D', k_CAULI:'cauliflower W G', k_CABBGE:'cabbage L G', k_PINEAP:'pineapple T G', k_NAVEL:'navel O G', k_CUKES:'cuke G D', k_ASPARG:'asparagus G P', k_SCUKE:'cuke L G', k_EGGPLT:'eggplant P G', k_PUMPKN:'pumpkin O K', k_CHAYOT:'chayote L G', k_CHERRY:'cherries R G', k_PEACH:'peach E M', k_SPAGSQ:'spaghetti Y E', k_BUTRSQ:'butternut E K', k_ACORN:'acorn G O', k_PWATER:'case24 C B', k_FWATER:'case24 M W', k_SWATER:'case24 C L', k_W10OZ:'case10 B W', k_LITTER:'litter S P', k_SWONI:'mesh E W', k_YONI3:'mesh Y W', k_LEMON2:'mesh Y W', k_MINICK:'mesh L W', k_RUS10:'mesh K W', k_ENVY:'apple R E',
   APPLES:'fruit R G', BANANA:'banana Y D', ONIONS:'fruit E K', LETTUC:'leafy L G', TOMATO:'fruit R G', CARROT:'carrot O G', LEMONS:'fruit Y G', GRAPES:'grapes P G',
   BREAD:'loaf T K', BAGELS:'ring T K', MUFFIN:'muffin K C', ROLLS:'loaf E T', DONUTS:'ring T M', CROISS:'crescent T K', CAKE:'cake W M', PIES:'pie T S',
   BARS:'bar D R', TRUFFL:'box D Y', MINTS:'tin C W', CARAML:'bar K Y', DARK:'bar A D', HAZEL:'jar D K', WAFERS:'box T R', KISSES:'bag S D',
@@ -186,7 +187,27 @@ function productIcon(name) {
     case 'ball': O(6.5, 7.5, 5, c1); R(5, 1, 8, 2, c2); S(4, 5, CAP); break;
     case 'fruit': O(6.5, 7.5, 5, c1); R(6, 1, 7, 2, STEM); R(8, 1, 9, 2, c2); S(4, 5, W_); break;
     case 'leafy': O(6.5, 7.5, 5.2, c1); O(6.5, 8, 3, c2); S(5, 4, W_); break;
-    case 'banana': for (let x = 1; x <= 12; x++) { const y = Math.round(9 - Math.pow(x - 6.5, 2) * 0.17); R(x, y - 1, x, y + 1, c1); } S(1, 7, c2); S(12, 7, c2); S(1, 6, c2); break;
+    case 'banana': for (let x = 2; x <= 11; x++) { const y = Math.round(8.5 - Math.pow(x - 6.5, 2) * 0.12), th = x <= 3 || x >= 10 ? 0 : 1; R(x, y - th, x, y + 1, c1); } S(2, 6, c2); S(2, 7, c2); S(11, 7, c2); break;
+    case 'cuke': {   // short, slightly curved cucumber with darker speckles; c2 = speckle color
+      for (let x = 1; x <= 12; x++) { const y = Math.round(8 - Math.pow(x - 6.5, 2) * 0.05), h = x === 1 || x === 12 ? 2 : x === 2 || x === 11 ? 3 : 4; R(x, y - h + 2, x, y + 2, c1); }
+      for (const [x, y] of [[3, 7], [6, 8], [4, 9], [9, 7], [8, 9], [11, 8], [7, 6]]) S(x, y, c2);
+      R(3, 6, 8, 6, shadeHex(c1, 40)); S(12, 8, STEM); break;
+    }
+    case 'avocado':  // pear shape: small top, wide bottom, stem
+      O(6.5, 4.5, 2.4, c1); O(6.5, 8.5, 4, c1); R(6, 1, 7, 1, STEM); S(5, 6, shadeHex(c1, 40)); break;
+    case 'eggplant': {   // long tilted teardrop with a green cap at the top
+      for (let k = 0; k <= 6; k++) O(4 + k * 0.85, 4 + k * 0.95, 1.6 + k * 0.38, c1);
+      R(2, 2, 5, 3, c2); S(3, 1, c2); S(1, 2, STEM); S(6, 3, c2); S(6, 7, shadeHex(c1, 45)); break;
+    }
+    case 'pineapple': {  // tall oval body with a diamond pattern and a spiky crown
+      for (let y = 5; y <= 13; y++) for (let x = 2; x <= 11; x++) { const dx = (x - 6.5) / 3.6, dy = (y - 9) / 4.4; if (dx * dx + dy * dy <= 1) S(x, y, (x + y) % 3 === 0 ? shadeHex(c1, -45) : c1); }
+      R(6, 1, 7, 4, c2); S(5, 2, c2); S(4, 1, c2); S(8, 2, c2); S(9, 1, c2); S(5, 3, c2); S(8, 3, c2); S(6, 0, c2); break;
+    }
+    case 'asparagus': {  // bundle of thin spears with darker tips and a rubber band
+      const tip = shadeHex(c1, -45);
+      for (const [x, top] of [[4, 3], [6, 1], [8, 2], [10, 4]]) { for (let y = top; y <= 13; y++) S(x, y, c1); S(x, top, tip); S(x, top + 1, tip); S(x - 1, top + 1, tip); S(x + 1, top + 1, tip); }
+      R(3, 10, 11, 10, '#7a5ac8'); break;
+    }
     case 'grapes': for (const [x, y] of [[4, 4], [7, 4], [10, 4], [5.5, 7], [8.5, 7], [7, 10]]) O(x, y, 1.6, c1); R(7, 0, 7, 2, c2); R(8, 1, 9, 1, c2); break;
     case 'carrot': for (let y = 4; y <= 13; y++) { const w = Math.max(0, Math.round((13 - y) * 0.4)); R(6 - w, y, 7 + w, y, c1); } R(5, 0, 5, 3, c2); R(7, 0, 7, 3, c2); R(9, 1, 9, 3, c2); S(6, 7, shadeHex(c1, -50)); S(7, 10, shadeHex(c1, -50)); break;
     case 'loaf': R(1, 5, 12, 12, c1); R(2, 4, 11, 4, c1); R(3, 3, 10, 3, c1); for (const x of [4, 7, 10]) { S(x, 5, c2); S(x - 1, 6, c2); } break;
@@ -208,6 +229,133 @@ function productIcon(name) {
     case 'tissue': R(2, 5, 11, 12, c1); R(4, 7, 9, 10, c2); R(5, 2, 8, 4, W_); S(6, 1, W_); break;
     case 'plates': for (let i = 0; i < 4; i++) R(1, 5 + i * 2, 12, 5 + i * 2, i % 2 ? c2 : c1); R(1, 4, 12, 4, c1); R(1, 12, 12, 12, c1); break;
     case 'cups': for (let i = 0; i < 3; i++) { const y = 2 + i * 3; R(3 - i * 0, y, 10, y + 4, c1); R(3, y, 10, y, c2); } R(4, 11, 9, 12, c1); break;
+    // ---- register produce: one hand-tuned shape per item (c1 / c2 from the ART colors) ----
+    case 'onion': {        // bulb with a pointed neck, root tuft and growth lines
+      for (let y = 4; y <= 12; y++) for (let x = 2; x <= 11; x++) { const dx = (x - 6.5) / 4.6, dy = (y - 8.6) / 3.8; if (dx * dx + dy * dy <= 1) S(x, y, c1); }
+      R(6, 2, 7, 4, c1); S(6, 1, c2); S(7, 1, c2); S(7, 0, c2);
+      for (const x of [4, 9]) for (let y = 6; y <= 11; y++) S(x, y, shadeHex(c1, -30));
+      S(5, 13, c2); S(7, 13, c2); S(8, 13, c2); S(4, 6, shadeHex(c1, 45)); break;
+    }
+    case 'roma': {         // oblong plum tomato with a green star calyx
+      for (let y = 3; y <= 12; y++) for (let x = 3; x <= 10; x++) { const dx = (x - 6.5) / 3.7, dy = (y - 7.8) / 4.8; if (dx * dx + dy * dy <= 1) S(x, y, c1); }
+      R(5, 3, 8, 3, c2); S(6, 2, c2); S(4, 4, c2); S(9, 4, c2); S(6, 1, STEM); S(5, 6, shadeHex(c1, 60)); break;
+    }
+    case 'bunch': {        // grape cluster: berries in a cone with a woody stem
+      // a cone of berries: 2x2 blocks in alternating shades, each with a highlight
+      for (let y = 3; y <= 13; y++) { const w = Math.max(1, Math.round(5.8 - (y - 3) * 0.48)); for (let x = 7 - w; x <= 6 + w; x++) {
+        const bx = (x - (y >> 1) % 2) >> 1, by = y >> 1, alt = (bx + by) % 2;
+        S(x, y, (x - (y >> 1) % 2) % 2 === 0 && y % 2 === 1 ? shadeHex(c1, 55) : alt ? shadeHex(c1, -30) : c1);
+      } }
+      R(7, 0, 7, 2, STEM); S(8, 1, STEM); R(9, 0, 10, 1, c2); break;
+    }
+    case 'iceberg': {      // round head, pale leaf veins, an outer leaf curling off one side
+      O(6.5, 7.5, 5.2, c1); O(6.5, 7.8, 3.2, shadeHex(c1, 30));
+      for (const [x0, y0, x1, y1] of [[6, 3, 4, 7], [7, 3, 9, 7], [6, 12, 5, 9], [8, 12, 9, 9]]) { const n = 5; for (let k = 0; k <= n; k++) S(x0 + (x1 - x0) * k / n, y0 + (y1 - y0) * k / n, shadeHex(c1, 70)); }
+      R(1, 6, 2, 9, shadeHex(c1, -25)); break;
+    }
+    case 'mango': {        // tilted kidney shape, red blush on the shoulder
+      for (let y = 2; y <= 12; y++) for (let x = 2; x <= 12; x++) { const u = (x - 7) * 0.8 + (y - 7) * 0.6, v = -(x - 7) * 0.6 + (y - 7) * 0.8; if ((u / 5.6) ** 2 + (v / 3.8) ** 2 <= 1) S(x, y, x + y < 11 ? c2 : c1); }
+      S(4, 2, STEM); S(5, 5, shadeHex(c2, 60)); break;
+    }
+    case 'melon': {        // big oval watermelon with dark stripes
+      for (let y = 2; y <= 12; y++) for (let x = 0; x <= 13; x++) { const dx = (x - 6.5) / 6.3, dy = (y - 7.2) / 4.8; if (dx * dx + dy * dy <= 1) S(x, y, (Math.round(x + (y - 7) * 0.25) % 3 === 0) ? c2 : c1); }
+      S(3, 4, shadeHex(c1, 50)); S(13, 7, STEM); break;
+    }
+    case 'calabaza': {     // wide ribbed squash, mottled green and orange
+      for (let y = 3; y <= 12; y++) for (let x = 0; x <= 13; x++) { const dx = (x - 6.5) / 6.4, dy = (y - 8) / 4.4; if (dx * dx + dy * dy <= 1) S(x, y, (x * 3 + y * 5) % 7 === 0 ? c2 : c1); }
+      for (const x of [3, 6, 7, 10]) for (let y = 5; y <= 11; y++) if (g[y][x]) S(x, y, shadeHex(c1, -40));
+      R(6, 1, 7, 3, STEM); S(8, 1, STEM); break;
+    }
+    case 'citrus': {       // small oval with a nub at one end, dimpled skin
+      for (let y = 4; y <= 12; y++) for (let x = 2; x <= 11; x++) { const dx = (x - 6.5) / 4.5, dy = (y - 8) / 4; if (dx * dx + dy * dy <= 1) S(x, y, (x + y * 2) % 5 === 0 ? shadeHex(c1, -20) : c1); }
+      S(5, 6, shadeHex(c1, 60)); S(6, 5, shadeHex(c1, 60)); S(11, 8, shadeHex(c1, -40)); if (c2) { S(6, 3, STEM); R(7, 2, 8, 3, c2); } break;
+    }
+    case 'apple': {        // apple outline with a top dip, stem, leaf and yellow streaks
+      for (let y = 3; y <= 12; y++) for (let x = 1; x <= 12; x++) { const dx = (x - 6.5) / 5.3, dy = (y - 8) / 4.8; if (dx * dx + dy * dy <= 1 && !(y === 3 && x >= 6 && x <= 7)) S(x, y, c1); }
+      for (const [x, y] of [[4, 6], [4, 7], [9, 5], [9, 6], [10, 8], [6, 10], [3, 9]]) S(x, y, c2);
+      R(6, 1, 6, 3, STEM); R(7, 1, 9, 1, PCOL.G); S(8, 2, PCOL.G); S(4, 5, shadeHex(c1, 70)); break;
+    }
+    case 'papaya': {       // long pear-oval, green shading into orange
+      for (let y = 1; y <= 13; y++) for (let x = 2; x <= 11; x++) { const dx = (x - 6.5) / (3 + (y - 1) * 0.12), dy = (y - 7.5) / 6.2; if (dx * dx + dy * dy <= 1) S(x, y, y < 6 ? c2 : c1); }
+      S(6, 0, STEM); S(5, 4, shadeHex(c2, 50)); S(5, 8, shadeHex(c1, 50)); break;
+    }
+    case 'cantaloupe': {   // round melon with a raised net pattern
+      O(6.5, 7.5, 5.3, c1);
+      for (let y = 2; y <= 13; y++) for (let x = 1; x <= 12; x++) if (g[y][x] && ((x + y) % 4 === 0 || (x - y + 40) % 4 === 0)) S(x, y, c2);
+      R(6, 1, 7, 2, STEM); break;
+    }
+    case 'potato': {       // lumpy oblong with eyes
+      for (let y = 4; y <= 11; y++) for (let x = 1; x <= 12; x++) { const dx = (x - 6.5) / 5.6, dy = (y - 7.5) / (3.2 + Math.sin(x) * 0.4); if (dx * dx + dy * dy <= 1) S(x, y, c1); }
+      for (const [x, y] of [[3, 6], [7, 5], [10, 7], [5, 9], [9, 9]]) S(x, y, c2); S(4, 5, shadeHex(c1, 45)); break;
+    }
+    case 'cauliflower': {  // white curd of round florets cupped by green leaves
+      R(1, 9, 12, 12, c2); S(0, 8, c2); S(13, 8, c2); R(2, 13, 11, 13, shadeHex(c2, -30));
+      for (const [x, y] of [[4, 5], [7, 4], [10, 5], [3, 8], [6, 7], [9, 7], [11, 8]]) O(x, y, 1.9, c1);
+      for (const [x, y] of [[4, 5], [7, 4], [10, 5], [6, 7], [9, 7]]) S(x + 1, y + 1, shadeHex(c1, -35));
+      for (let x = 2; x <= 11; x += 3) S(x, 11, shadeHex(c2, 50)); break;
+    }
+    case 'cabbage': {      // round head with a wavy outer leaf and veins
+      O(6.5, 7.5, 5.4, c2); O(6.5, 7.3, 4, c1);
+      for (let k = 0; k <= 4; k++) { S(6.5 - k * 0.5, 7 - k, shadeHex(c1, 55)); S(6.5 + k * 0.6, 8 - k * 0.3, shadeHex(c1, 55)); S(6.5, 7 + k * 0.9, shadeHex(c1, 55)); }
+      S(1, 6, shadeHex(c2, -30)); S(12, 9, shadeHex(c2, -30)); break;
+    }
+    case 'navel': {        // round orange, dimpled peel, navel spot and a leaf
+      O(6.5, 7.8, 5.2, c1);
+      for (let y = 3; y <= 13; y++) for (let x = 1; x <= 12; x++) if (g[y][x] && (x * 5 + y * 3) % 7 === 0) S(x, y, shadeHex(c1, -22));
+      S(8, 11, shadeHex(c1, -60)); S(7, 11, shadeHex(c1, -40)); R(6, 1, 6, 2, STEM); R(7, 1, 9, 2, c2); S(4, 5, shadeHex(c1, 65)); break;
+    }
+    case 'pumpkin': {      // wide, deeply ribbed, thick stem
+      for (let y = 3; y <= 12; y++) for (let x = 0; x <= 13; x++) { const dx = (x - 6.5) / 6.6, dy = (y - 8) / 4.6; if (dx * dx + dy * dy <= 1) S(x, y, c1); }
+      for (const x of [2, 4, 6, 7, 9, 11]) for (let y = 4; y <= 12; y++) if (g[y][x] && Math.abs(x - 6.5) > 0.6 || (x === 6 || x === 7) && y > 4 && y < 12 && g[y][x]) S(x, y, x === 6 || x === 7 ? c1 : shadeHex(c1, -35));
+      R(6, 0, 7, 3, c2); S(8, 0, c2); break;
+    }
+    case 'chayote': {      // pear-shaped, puckered seams at the wide end
+      for (let y = 2; y <= 13; y++) for (let x = 1; x <= 12; x++) { const w = 2.2 + (y - 2) * 0.33, dx = (x - 6.5) / Math.min(w, 5.4), dy = (y - 7.5) / 5.8; if (dx * dx + dy * dy <= 1) S(x, y, c1); }
+      for (const x of [4, 6, 8, 10]) { S(x, 12, shadeHex(c1, -40)); S(x, 11, shadeHex(c1, -25)); }
+      S(5, 5, shadeHex(c1, 50)); S(6, 1, STEM); break;
+    }
+    case 'cherries': {     // two cherries hanging from joined stems
+      O(4, 9.5, 2.9, c1); O(9.5, 10, 2.9, c1); S(3, 8, shadeHex(c1, 70)); S(8, 9, shadeHex(c1, 70));
+      for (let k = 0; k <= 5; k++) { S(4 + k * 0.4, 6.5 - k, STEM); S(9.5 - k * 0.6, 7 - k, STEM); }
+      R(6, 1, 7, 1, STEM); R(8, 0, 10, 1, c2); break;
+    }
+    case 'peach': {        // round, a crease down one side, rosy blush, leaf
+      O(6.5, 8, 5.2, c1);
+      for (let y = 4; y <= 13; y++) for (let x = 1; x <= 12; x++) if (g[y][x] && x + y > 13) S(x, y, c2);
+      for (let y = 4; y <= 11; y++) S(6 + Math.round((y - 4) * 0.25), y, shadeHex(c2, -35));
+      R(6, 1, 6, 2, STEM); R(7, 1, 9, 2, PCOL.G); S(4, 6, shadeHex(c1, 55)); break;
+    }
+    case 'spaghetti': {    // pale yellow oval, faint lengthwise stripes
+      for (let y = 3; y <= 12; y++) for (let x = 0; x <= 13; x++) { const dx = (x - 6.5) / 6.2, dy = (y - 7.5) / 4.3; if (dx * dx + dy * dy <= 1) S(x, y, c1); }
+      for (const y of [5, 8, 10]) for (let x = 2; x <= 11; x++) if (g[y][x]) S(x, y, c2);
+      S(13, 7, STEM); S(3, 5, shadeHex(c1, 45)); break;
+    }
+    case 'butternut': {    // long neck widening into a round bulb
+      for (let y = 1; y <= 13; y++) { const w = y < 8 ? 1.6 + (y - 1) * 0.08 : 1.6 + Math.sqrt(Math.max(0, 9 - (y - 10.5) ** 2)) * 1.1; R(Math.round(6.5 - w), y, Math.round(6.5 + w) - 1, y, c1); }
+      R(6, 0, 6, 1, STEM); S(5, 4, shadeHex(c1, 45)); S(4, 10, shadeHex(c1, 45)); S(7, 12, c2); break;
+    }
+    case 'acorn': {        // pointed bottom, deep ribs, an orange patch, stem on top
+      for (let y = 2; y <= 13; y++) { const w = y < 7 ? 3 + (y - 2) * 0.6 : 6 - (y - 7) * 0.85; if (w > 0) R(Math.round(6.5 - w), y, Math.round(6.5 + w) - 1, y, c1); }
+      for (const x of [3, 5, 8, 10]) for (let y = 3; y <= 11; y++) if (g[y][x]) S(x, y, shadeHex(c1, -40));
+      R(9, 8, 10, 10, c2); R(6, 0, 7, 2, STEM); break;
+    }
+    case 'case24': {       // shrink-wrapped case of bottles: caps on top, label band
+      R(1, 5, 12, 13, c1); for (let x = 1; x <= 12; x += 2) R(x, 3, x, 4, c2); R(1, 8, 12, 10, W_); R(3, 9, 10, 9, c2);
+      for (let y = 5; y <= 13; y++) S(12, y, shadeHex(c1, -30)); S(2, 6, shadeHex(c1, 60)); S(2, 11, shadeHex(c1, 60)); break;
+    }
+    case 'case10': {       // tray of small bottles: a grid of caps, shorter label band
+      R(1, 6, 12, 13, c1); for (let y = 2; y <= 4; y += 2) for (let x = 1; x <= 12; x += 2) S(x + (y === 4 ? 1 : 0), y, c2);
+      R(1, 9, 12, 10, W_); S(4, 9, c2); S(8, 9, c2); break;
+    }
+    case 'litter': {       // jug with a handle and a cat on the label
+      R(2, 4, 11, 13, c1); R(3, 1, 9, 3, c1); R(4, 2, 8, 2, null); R(4, 1, 8, 1, c1);
+      R(4, 6, 9, 11, c2); R(5, 8, 7, 10, W_); S(5, 7, W_); S(7, 7, W_); R(8, 10, 9, 10, W_); S(10, 3, shadeHex(c1, -30)); break;
+    }
+    case 'mesh': {         // net bag of round produce (c1) with a paper tag (c2)
+      for (const [x, y] of [[4, 6], [8, 6], [6, 9], [3, 10], [9, 10], [6, 12]]) O(x, y, 2.1, c1);
+      for (let y = 4; y <= 13; y++) for (let x = 1; x <= 12; x++) if (g[y][x] && (x + y) % 3 === 0) S(x, y, '#c8b890');
+      R(5, 1, 8, 3, c2); R(6, 0, 7, 0, STEM); break;
+    }
     default: R(3, 2, 10, 12, c1); R(4, 5, 9, 9, c2);
   }
   function A_(c) { return c; }
@@ -1824,8 +1972,10 @@ function drawZamTop() {
 
 // ---------- Cashier: 2-minute register shift. Turn each item until its barcode faces the glass, scan.
 // Produce has no barcode: type its real store code. Cash orders end with making change. ----------
-const PLU = { APPLES: '4016', BANANA: '4011', ONIONS: '4093', LETTUC: '4061', TOMATO: '4064', CARROT: '4562', LEMONS: '4053', GRAPES: '4022' };
-const PLU_NAME = { APPLES: 'RED APPLES', BANANA: 'BANANAS', ONIONS: 'YELLOW ONIONS', LETTUC: 'LETTUCE', TOMATO: 'TOMATOES', CARROT: 'CARROTS', LEMONS: 'LEMONS', GRAPES: 'GREEN GRAPES' };
+// register codes (Keith's store list, Nov 2026). Keyed at the register: produce, bulk water, cat litter.
+const PLU = { k_WONION: '31', k_ROMA: '10', k_RGRAPE: '1', k_RONION: '16', k_ICEBRG: '12', k_MANGO: '9', k_WMELON: '15', k_CALABZ: '49', k_AVOCAD: '2', k_LIMES: '51', k_GALA: '82', k_BANANA4: '4', k_PAPAYA: '22', k_GGRAPE: '8', k_OBANAN: '7', k_CANTLP: '5', k_RUSSET: '88', k_CAULI: '14', k_CABBGE: '3', k_PINEAP: '43', k_NAVEL: '114', k_CUKES: '6', k_ASPARG: '54', k_SCUKE: '44', k_EGGPLT: '25', k_PUMPKN: '36', k_CHAYOT: '48', k_CHERRY: '34', k_PEACH: '18', k_SPAGSQ: '40', k_BUTRSQ: '39', k_ACORN: '38', k_PWATER: '99', k_FWATER: '97', k_SWATER: '98', k_W10OZ: '97', k_LITTER: '91', k_SWONI: '113', k_YONI3: '116', k_LEMON2: '71', k_MINICK: '109', k_RUS10: '46', k_ENVY: '55' };
+const PLU_NAME = { k_WONION: 'WHITE ONIONS', k_ROMA: 'ROMA TOMATOES', k_RGRAPE: 'RED GRAPES', k_RONION: 'RED ONIONS', k_ICEBRG: 'ICEBERG LETTUCE', k_MANGO: 'MANGOES', k_WMELON: 'SEEDLESS WATERMELON', k_CALABZ: 'CALABAZA SQUASH', k_AVOCAD: 'AVOCADOS', k_LIMES: 'LIMES', k_GALA: 'GALA APPLES', k_BANANA4: 'BANANAS', k_PAPAYA: 'PAPAYA', k_GGRAPE: 'GREEN GRAPES', k_OBANAN: 'ORGANIC BANANAS', k_CANTLP: 'CANTALOUPE', k_RUSSET: 'RUSSET POTATOES', k_CAULI: 'CAULIFLOWER', k_CABBGE: 'CABBAGE', k_PINEAP: 'PINEAPPLE', k_NAVEL: 'NAVEL ORANGES', k_CUKES: 'CUCUMBERS', k_ASPARG: 'ASPARAGUS', k_SCUKE: 'SEEDLESS CUCUMBERS', k_EGGPLT: 'EGGPLANT', k_PUMPKN: 'PUMPKIN', k_CHAYOT: 'CHAYOTE SQUASH', k_CHERRY: 'RED CHERRIES', k_PEACH: 'PEACHES', k_SPAGSQ: 'SPAGHETTI SQUASH', k_BUTRSQ: 'BUTTERNUT SQUASH', k_ACORN: 'ACORN SQUASH', k_PWATER: 'PURIFIED WATER 24PK', k_FWATER: 'FLAVORED WATER 24PK', k_SWATER: 'SPRING WATER 24PK', k_W10OZ: 'PURIFIED WATER 10OZ', k_LITTER: 'CAT LITTER', k_SWONI: 'SWEET ONIONS 2LB', k_YONI3: 'YELLOW ONIONS 3LB', k_LEMON2: 'LEMONS 2LB', k_MINICK: 'ORGANIC MINI CUCUMBERS', k_RUS10: 'RUSSET POTATOES 10LB', k_ENVY: 'ENVY APPLES' };
+const KEYED = Object.keys(PLU);
 const CASH_SECONDS = 120, BELT_X0 = 40, BELT_X1 = 196, BELT_GAP = 34, BELT_FULL = 5;
 const DENOMS = [2000, 1000, 500, 100, 25, 10, 5, 1];        // cents
 const FACE_NAMES = { F: 'facing the glass', R: 'on the right side', L: 'on the left side', T: 'on top', D: 'on the bottom', B: 'on the back' };
@@ -1842,7 +1992,7 @@ function cashStart() {
 // orders line up on the belt: C.orderQ[0] is the one being rung up, the last one is still being unloaded
 function newOrder(C) {
   const all = Object.values(PRODUCTS).flat(), n = 4 + rri(5), list = [];
-  for (let i = 0; i < n; i++) list.push(Math.random() < 0.22 ? rpick(PRODUCTS.PRODUCE) : rpick(all));
+  for (let i = 0; i < n; i++) list.push(Math.random() < 0.22 ? rpick(KEYED) : rpick(all.filter(x => !PRODUCTS.PRODUCE.includes(x))));
   C.orderQ.push({ queue: list, total: 0, count: n, cash: Math.random() < 0.45 });
   C.order = C.orderQ[0];
 }
